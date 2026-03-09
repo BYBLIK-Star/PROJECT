@@ -1,0 +1,16 @@
+{
+  "total_games": 1,
+  "wins": 0,
+  "losses": 1,
+  "saved_prisoners": 8,
+  "lost_prisoners": 92,
+  "by_n": {
+    "100": {
+      "games": 1,
+      "wins": 0,
+      "losses": 1,
+      "saved_prisoners": 8,
+      "lost_prisoners": 92
+    }
+  }
+}
