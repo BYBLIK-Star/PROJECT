@@ -1,0 +1,17 @@
+CREATE TABLE IF NOT EXISTS stats_total (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    total_games INTEGER NOT NULL DEFAULT 0,
+    wins INTEGER NOT NULL DEFAULT 0,
+    losses INTEGER NOT NULL DEFAULT 0,
+    saved_prisoners INTEGER NOT NULL DEFAULT 0,
+    lost_prisoners INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS stats_by_n (
+    total_prisoners INTEGER PRIMARY KEY,
+    games INTEGER NOT NULL DEFAULT 0,
+    wins INTEGER NOT NULL DEFAULT 0,
+    losses INTEGER NOT NULL DEFAULT 0,
+    saved_prisoners INTEGER NOT NULL DEFAULT 0,
+    lost_prisoners INTEGER NOT NULL DEFAULT 0
+);

@@ -13,7 +13,8 @@ from game_logic import (
 )
 from stats_store import StatsStore
 
-STATS_FILE = Path(__file__).with_name("prisoners_stats.json")
+STATS_DB = Path(__file__).with_name("prisoners_stats.db")
+LEGACY_STATS_FILE = Path(__file__).with_name("prisoners_stats.json")
 
 
 # ------------------------------
@@ -55,7 +56,7 @@ class PrisonersApp(ctk.CTk):
         self.stats_kpi_labels: Dict[str, ctk.CTkLabel] = {}
         self.stats_n_cards: Dict[int, Dict[str, ctk.CTkLabel]] = {}
         self.stats_fact_label: Optional[ctk.CTkLabel] = None
-        self.stats_store = StatsStore(STATS_FILE)
+        self.stats_store = StatsStore(STATS_DB, legacy_json_path=LEGACY_STATS_FILE)
         self.stats_detail_ns: List[int] = [10, 25]
         self.board_wrap: Optional[ctk.CTkScrollableFrame] = None
         self.round_summary: Optional[ctk.CTkFrame] = None
