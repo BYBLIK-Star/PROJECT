@@ -16,10 +16,27 @@ from stats_store import StatsStore
 STATS_DB = Path(__file__).with_name("prisoners_stats.db")
 LEGACY_STATS_FILE = Path(__file__).with_name("prisoners_stats.json")
 
+BG_COLOR = "#2f6a56"
+SURFACE_COLOR = "#3e836a"
+SURFACE_DARK = "#367764"
+PANEL_COLOR = "#4c8573"
+BORDER_COLOR = "#23f2e0"
+TEXT_PRIMARY = "#f5f8f6"
+TEXT_MUTED = "#d8e8dd"
+TEXT_DIM = "#b7cdc1"
+GREEN = "#06a20c"
+GREEN_HOVER = "#058a0a"
+BLUE = "#18588c"
+BLUE_HOVER = "#14486f"
+RED = "#f22408"
+RED_HOVER = "#cd1d06"
+ACCENT = "#1ea0ff"
+CARD_NEUTRAL = "#32594c"
+CELL_COLOR = "#85988f"
+CELL_HOVER = "#92a39b"
+SUCCESS_COLOR = "#45aa61"
+FAIL_COLOR = "#bf675b"
 
-# ------------------------------
-# App
-# ------------------------------
 
 class PrisonersApp(ctk.CTk):
     def __init__(self) -> None:
@@ -30,14 +47,12 @@ class PrisonersApp(ctk.CTk):
 
         self.title("100 заключенных")
         self.geometry("1100x760")
-        self.minsize(940, 640)
+        self.minsize(960, 700)
+        self.configure(fg_color=BG_COLOR)
 
-        self.configure(fg_color="#070f37")
-
-        self.container = ctk.CTkFrame(self, fg_color="#15245f")
+        self.container = ctk.CTkFrame(self, fg_color=BG_COLOR)
         self.container.pack(fill="both", expand=True, padx=20, pady=20)
 
-        # runtime state
         self.total_cells = DEFAULT_CELLS
         self.prisoner_number = 1
         self.max_open = self.total_cells // 2
@@ -60,18 +75,22 @@ class PrisonersApp(ctk.CTk):
         self.stats_detail_ns: List[int] = [10, 25]
         self.board_wrap: Optional[ctk.CTkScrollableFrame] = None
         self.round_summary: Optional[ctk.CTkFrame] = None
+        self.game_header: Optional[ctk.CTkFrame] = None
+        self.game_prisoner_card: Optional[ctk.CTkFrame] = None
+        self.game_rules_card: Optional[ctk.CTkFrame] = None
+        self.game_status_value: Optional[ctk.CTkLabel] = None
+        self.game_attempts_value: Optional[ctk.CTkLabel] = None
+        self.prisoner_badge_label: Optional[ctk.CTkLabel] = None
         self.cell_buttons: List[ctk.CTkButton] = []
         self.setup_summary_label: Optional[ctk.CTkLabel] = None
         self.quick_pick_buttons: List[ctk.CTkButton] = []
         self.mode_buttons: Dict[str, ctk.CTkButton] = {}
-        self.game_mode = "manual"  # manual | cycle | random
+        self.game_mode = "manual"
         self.auto_job: Optional[str] = None
         self.auto_sequence: List[int] = []
         self.auto_step_index = 0
 
         self.show_main_menu()
-
-    # ---------- helpers ----------
 
     def clear_container(self) -> None:
         self._cancel_auto_job()
@@ -79,14 +98,12 @@ class PrisonersApp(ctk.CTk):
             child.destroy()
         self.board_wrap = None
         self.round_summary = None
-
-    def title_label(self, parent, text: str) -> None:
-        ctk.CTkLabel(
-            parent,
-            text=text,
-            font=ctk.CTkFont(size=34, weight="bold"),
-            text_color="#f3f5ff",
-        ).pack(pady=(18, 14))
+        self.game_header = None
+        self.game_prisoner_card = None
+        self.game_rules_card = None
+        self.game_status_value = None
+        self.game_attempts_value = None
+        self.prisoner_badge_label = None
 
     def _record_completed_game(self, won: bool, total_prisoners: int, saved_prisoners: int) -> None:
         try:
@@ -99,179 +116,219 @@ class PrisonersApp(ctk.CTk):
         except Exception:
             self._set_status("Не удалось сохранить статистику на диск.", "#ffb0b0")
 
-    # ---------- pages ----------
+    def _make_panel(
+        self,
+        parent,
+        *,
+        fg_color: str = SURFACE_COLOR,
+        corner_radius: int = 16,
+        border_width: int = 1,
+        border_color: str = BORDER_COLOR,
+    ) -> ctk.CTkFrame:
+        return ctk.CTkFrame(
+            parent,
+            fg_color=fg_color,
+            corner_radius=corner_radius,
+            border_width=border_width,
+            border_color=border_color,
+        )
+
+    def _make_button(
+        self,
+        parent,
+        text: str,
+        *,
+        command,
+        fg_color: str,
+        hover_color: str,
+        width: int,
+        height: int,
+        font_size: int,
+        bold: bool = False,
+        corner_radius: int = 12,
+        text_color: str = TEXT_PRIMARY,
+    ) -> ctk.CTkButton:
+        return ctk.CTkButton(
+            parent,
+            text=text,
+            command=command,
+            fg_color=fg_color,
+            hover_color=hover_color,
+            text_color=text_color,
+            width=width,
+            height=height,
+            corner_radius=corner_radius,
+            font=ctk.CTkFont(size=font_size, weight="bold" if bold else "normal"),
+        )
 
     def show_main_menu(self) -> None:
         self.clear_container()
 
-        card = ctk.CTkFrame(
-            self.container,
-            width=420,
-            fg_color="#3f4f83",
-            corner_radius=18,
-            border_width=1,
-            border_color="#7f8cbd",
-        )
+        card = self._make_panel(self.container, fg_color=SURFACE_COLOR, corner_radius=20)
         card.place(relx=0.5, rely=0.5, anchor="center")
 
-        self.title_label(card, "100 заключенных")
-
-        ctk.CTkButton(
-            card,
-            text="Играть",
-            width=280,
-            height=50,
-            corner_radius=12,
-            fg_color="#1140ff",
-            hover_color="#0f35d8",
-            command=self.show_game_setup,
-            font=ctk.CTkFont(size=22),
-        ).pack(pady=8)
-
-        ctk.CTkButton(
-            card,
-            text="Статистика",
-            width=280,
-            height=50,
-            corner_radius=12,
-            fg_color="#68769e",
-            hover_color="#5a678c",
-            command=self.show_stats_page,
-            font=ctk.CTkFont(size=22),
-        ).pack(pady=8)
-
-        ctk.CTkButton(
-            card,
-            text="Выйти",
-            width=280,
-            height=50,
-            corner_radius=12,
-            fg_color="#ff1414",
-            hover_color="#d80f0f",
-            command=self.destroy,
-            font=ctk.CTkFont(size=22),
-        ).pack(pady=8)
+        content = ctk.CTkFrame(card, fg_color="transparent")
+        content.pack(padx=68, pady=36)
 
         ctk.CTkLabel(
-            card,
-            text="Каждый заключенный может открыть не больше половины ячеек.",
-            font=ctk.CTkFont(size=14),
-            text_color="#d2daf6",
-        ).pack(pady=(10, 18))
+            content,
+            text="100 заключенных",
+            font=ctk.CTkFont(size=28, weight="normal"),
+            text_color=TEXT_PRIMARY,
+        ).pack(pady=(0, 18))
+
+        self._make_button(
+            content,
+            "Play     Играть",
+            command=self.show_game_setup,
+            fg_color=GREEN,
+            hover_color=GREEN_HOVER,
+            width=315,
+            height=68,
+            font_size=26,
+        ).pack(pady=6)
+
+        self._make_button(
+            content,
+            "Stat     Статистика",
+            command=self.show_stats_page,
+            fg_color=BLUE,
+            hover_color=BLUE_HOVER,
+            width=315,
+            height=68,
+            font_size=24,
+        ).pack(pady=6)
+
+        self._make_button(
+            content,
+            "Exit     Выйти",
+            command=self.destroy,
+            fg_color=RED,
+            hover_color=RED_HOVER,
+            width=315,
+            height=68,
+            font_size=24,
+        ).pack(pady=6)
+
+        ctk.CTkLabel(
+            content,
+            text="Классическая логическая задача\nНайдите свой номер среди 100 ящиков",
+            font=ctk.CTkFont(size=16),
+            text_color=TEXT_MUTED,
+            justify="center",
+        ).pack(pady=(18, 0))
 
     def show_game_setup(self) -> None:
         self.clear_container()
 
-        panel = ctk.CTkFrame(
-            self.container,
-            width=560,
-            fg_color="#2d3f77",
-            corner_radius=16,
-            border_width=1,
-            border_color="#6d7cae",
-        )
+        panel = self._make_panel(self.container, fg_color=SURFACE_COLOR, corner_radius=20)
         panel.place(relx=0.5, rely=0.5, anchor="center")
 
-        self.title_label(panel, "Настройка игры")
-
-        self.quick_pick_buttons = []
-
-        form = ctk.CTkFrame(panel, fg_color="transparent")
-        form.pack(padx=28, pady=(0, 16), fill="x")
+        body = ctk.CTkFrame(panel, fg_color="transparent")
+        body.pack(padx=34, pady=28)
 
         ctk.CTkLabel(
-            form,
-            text="Количество заключенных:",
-            font=ctk.CTkFont(size=20, weight="bold"),
-            text_color="#f3f5ff",
-        ).pack(anchor="w", pady=(0, 8))
+            body,
+            text="Настройка игры",
+            font=ctk.CTkFont(size=36, weight="bold"),
+            text_color=TEXT_PRIMARY,
+        ).pack(pady=(0, 24))
 
-        input_card = ctk.CTkFrame(form, fg_color="#27376f", corner_radius=10)
-        input_card.pack(fill="x", pady=(0, 8))
+        title_row = ctk.CTkFrame(body, fg_color="transparent")
+        title_row.pack(fill="x", pady=(0, 12))
+
+        ctk.CTkLabel(
+            title_row,
+            text="Количество заключенных:",
+            font=ctk.CTkFont(size=22, weight="bold"),
+            text_color="#0c1110",
+        ).pack(anchor="w")
+
+        input_card = self._make_panel(body, fg_color=SURFACE_DARK, corner_radius=10, border_width=0)
+        input_card.pack(fill="x", pady=(0, 10))
 
         ctk.CTkLabel(
             input_card,
             text="Введите число (от 2 до 1000):",
-            font=ctk.CTkFont(size=13),
-            text_color="#cad4ff",
-        ).pack(anchor="w", padx=16, pady=(10, 8))
+            font=ctk.CTkFont(size=13, weight="bold"),
+            text_color=TEXT_MUTED,
+        ).pack(anchor="w", padx=20, pady=(12, 6))
 
         self.cells_entry = ctk.CTkEntry(
             input_card,
-            width=260,
-            height=40,
+            width=220,
+            height=44,
             justify="center",
-            font=ctk.CTkFont(size=28, weight="bold"),
-            fg_color="#42507d",
-            border_color="#7f8cbd",
+            font=ctk.CTkFont(size=24, weight="bold"),
+            fg_color="#547d72",
+            border_color="#91a89c",
+            text_color=TEXT_PRIMARY,
         )
-        self.cells_entry.pack(pady=(0, 14))
+        self.cells_entry.pack(pady=(0, 18))
         self.cells_entry.insert(0, str(DEFAULT_CELLS))
         self.cells_entry.bind("<KeyRelease>", lambda _event: self._refresh_setup_preview())
 
-        summary_card = ctk.CTkFrame(form, fg_color="#27376f", corner_radius=10)
-        summary_card.pack(fill="x", pady=(0, 10))
+        summary_card = self._make_panel(body, fg_color=SURFACE_DARK, corner_radius=10, border_width=0)
+        summary_card.pack(fill="x", pady=(0, 18))
 
         self.setup_summary_label = ctk.CTkLabel(
             summary_card,
             text="100\nПопыток на каждого: 50",
-            font=ctk.CTkFont(size=18),
-            text_color="#dfe6ff",
+            font=ctk.CTkFont(size=19),
+            text_color=TEXT_MUTED,
             justify="center",
         )
-        self.setup_summary_label.pack(pady=10)
+        self.setup_summary_label.pack(pady=14)
 
         ctk.CTkLabel(
-            form,
+            body,
             text="Быстрый выбор:",
-            font=ctk.CTkFont(size=15),
-            text_color="#d0d8fb",
-        ).pack(anchor="w", pady=(2, 8))
+            font=ctk.CTkFont(size=16),
+            text_color=TEXT_PRIMARY,
+        ).pack(anchor="w", pady=(0, 10))
 
-        quick_grid = ctk.CTkFrame(form, fg_color="transparent")
-        quick_grid.pack(fill="x", pady=(0, 14))
+        quick_grid = ctk.CTkFrame(body, fg_color="transparent")
+        quick_grid.pack(fill="x", pady=(0, 18))
         quick_values = [10, 25, 50, 100, 150, 200]
+        self.quick_pick_buttons = []
         for idx, value in enumerate(quick_values):
             row = idx // 3
             col = idx % 3
-            btn = ctk.CTkButton(
+            btn = self._make_button(
                 quick_grid,
-                text=str(value),
-                width=112,
-                height=38,
-                corner_radius=8,
-                font=ctk.CTkFont(size=16),
-                fg_color="#5a668d",
-                hover_color="#66749f",
+                str(value),
                 command=lambda v=value: self._set_quick_pick(v),
+                fg_color="#66887c",
+                hover_color="#739488",
+                width=110,
+                height=34,
+                font_size=17,
+                corner_radius=6,
             )
-            btn.grid(row=row, column=col, padx=6, pady=5)
+            btn.grid(row=row, column=col, padx=8, pady=6)
             self.quick_pick_buttons.append(btn)
 
-        btns = ctk.CTkFrame(panel, fg_color="transparent")
-        btns.pack(pady=(0, 20))
-
-        ctk.CTkButton(
-            btns,
-            text="▷  Начать игру",
-            width=360,
-            height=58,
-            font=ctk.CTkFont(size=34, weight="bold"),
-            fg_color="#0cff39",
-            hover_color="#00de2f",
-            text_color="#ffffff",
+        self._make_button(
+            body,
+            "Play  Начать игру",
             command=self.start_interactive_game,
-        ).pack(pady=(0, 10))
+            fg_color=GREEN,
+            hover_color=GREEN_HOVER,
+            width=315,
+            height=66,
+            font_size=24,
+            bold=True,
+        ).pack(pady=(2, 10))
 
-        ctk.CTkButton(
-            btns,
-            text="Назад",
-            width=360,
-            height=46,
-            font=ctk.CTkFont(size=18),
-            fg_color="#5a668d",
-            hover_color="#66749f",
+        self._make_button(
+            body,
+            "Назад",
             command=self.show_main_menu,
+            fg_color=RED,
+            hover_color=RED_HOVER,
+            width=315,
+            height=40,
+            font_size=18,
         ).pack()
 
         self.status_label = ctk.CTkLabel(
@@ -280,224 +337,256 @@ class PrisonersApp(ctk.CTk):
             font=ctk.CTkFont(size=15, weight="bold"),
             text_color="#ffb0b0",
         )
-        self.status_label.pack(side="bottom", pady=(0, 14))
+        self.status_label.pack(side="bottom", pady=(0, 10))
         self.counter_label = ctk.CTkLabel(self.container, text="")
         self._refresh_setup_preview()
 
     def show_stats_page(self) -> None:
         self.clear_container()
 
-        panel = ctk.CTkFrame(
+        page = ctk.CTkScrollableFrame(
             self.container,
-            fg_color="#1b2f72",
-            corner_radius=16,
-            border_width=1,
-            border_color="#8ca2e7",
+            fg_color="transparent",
+            scrollbar_button_color="#447b69",
+            scrollbar_button_hover_color="#508774",
         )
-        panel.pack(fill="both", expand=True, padx=30, pady=24)
+        page.pack(fill="both", expand=True)
 
-        self.stats_kpi_labels = {}
-        self.stats_n_cards = {}
+        header = self._make_panel(page, fg_color=SURFACE_COLOR, corner_radius=14)
+        header.pack(fill="x", padx=110, pady=(26, 22))
 
-        header = ctk.CTkFrame(panel, fg_color="transparent")
-        header.pack(fill="x", padx=26, pady=(20, 8))
+        top_row = ctk.CTkFrame(header, fg_color="transparent")
+        top_row.pack(fill="x", padx=12, pady=(10, 0))
+
+        self._make_button(
+            top_row,
+            "<-  Назад",
+            command=self.show_main_menu,
+            fg_color=RED,
+            hover_color=RED_HOVER,
+            width=96,
+            height=28,
+            font_size=12,
+            corner_radius=8,
+        ).pack(side="left")
+
+        self._make_button(
+            top_row,
+            "Экспорт данных",
+            command=lambda: self._set_status("Экспорт данных пока не реализован.", TEXT_MUTED),
+            fg_color=BLUE,
+            hover_color=BLUE_HOVER,
+            width=132,
+            height=28,
+            font_size=12,
+            corner_radius=8,
+        ).pack(side="right")
+
         ctk.CTkLabel(
             header,
             text="Статистика",
-            font=ctk.CTkFont(size=40, weight="bold"),
-            text_color="#f3f6ff",
-        ).pack(side="left")
-
-        ctk.CTkButton(
-            header,
-            text="Назад",
-            width=120,
-            height=36,
-            corner_radius=12,
-            fg_color="#56689e",
-            hover_color="#6479b8",
-            command=self.show_main_menu,
-            font=ctk.CTkFont(size=16),
-        ).pack(side="right")
-
-        controls = ctk.CTkFrame(panel, fg_color="transparent")
-        controls.pack(padx=22, pady=(0, 10), fill="x")
-        controls.grid_columnconfigure(0, weight=1)
-        controls.grid_columnconfigure(1, weight=1)
-        controls.grid_columnconfigure(2, weight=1)
-        controls.grid_columnconfigure(3, weight=1)
+            font=ctk.CTkFont(size=38, weight="bold"),
+            text_color=TEXT_PRIMARY,
+        ).pack(anchor="w", padx=54, pady=(0, 6))
 
         ctk.CTkLabel(
-            controls,
-            text="Количество заключенных (N):",
-            font=ctk.CTkFont(size=16),
-            text_color="#dbe3ff",
-        ).grid(row=0, column=0, padx=8, pady=6, sticky="w")
-        self.stats_cells_entry = ctk.CTkEntry(
-            controls,
-            width=140,
-            height=36,
-            font=ctk.CTkFont(size=16),
-        )
-        self.stats_cells_entry.grid(row=0, column=1, padx=8, pady=6, sticky="w")
-        self.stats_cells_entry.insert(0, str(DEFAULT_CELLS))
-
-        ctk.CTkButton(
-            controls,
-            text="Обновить статистику",
-            width=220,
-            height=40,
-            corner_radius=10,
-            font=ctk.CTkFont(size=16, weight="bold"),
-            fg_color="#0f5dff",
-            hover_color="#0d4dd4",
-            command=self.run_stats,
-        ).grid(row=0, column=2, columnspan=2, padx=8, pady=6, sticky="w")
+            header,
+            text="Общая статистика",
+            font=ctk.CTkFont(size=18, weight="bold"),
+            text_color=TEXT_PRIMARY,
+        ).pack(anchor="w", padx=64, pady=(0, 14))
 
         self.status_label = ctk.CTkLabel(
-            panel,
+            header,
             text="",
-            font=ctk.CTkFont(size=14, weight="bold"),
-            text_color="#b6cbff",
+            font=ctk.CTkFont(size=13, weight="bold"),
+            text_color=TEXT_MUTED,
         )
-        self.status_label.pack(anchor="w", padx=28, pady=(8, 0))
+        self.status_label.pack(anchor="w", padx=64, pady=(0, 8))
 
-        ctk.CTkLabel(
-            panel,
-            text="Общая статистика",
-            font=ctk.CTkFont(size=22, weight="bold"),
-            text_color="#f3f6ff",
-        ).pack(anchor="w", padx=26, pady=(16, 10))
-
-        kpi_row = ctk.CTkFrame(panel, fg_color="transparent")
-        kpi_row.pack(fill="x", padx=20, pady=(0, 14))
+        kpi_row = ctk.CTkFrame(header, fg_color="transparent")
+        kpi_row.pack(fill="x", padx=52, pady=(0, 22))
         kpi_row.grid_columnconfigure((0, 1, 2, 3), weight=1)
+        self.stats_kpi_labels = {}
 
         def _kpi_card(col: int, title: str, key: str, color: str) -> None:
-            card = ctk.CTkFrame(
-                kpi_row,
-                fg_color=color,
-                corner_radius=12,
-                border_width=1,
-                border_color="#7b90d9",
-            )
-            card.grid(row=0, column=col, padx=6, pady=4, sticky="nsew")
+            card = self._make_panel(kpi_row, fg_color=color, corner_radius=10, border_width=1, border_color=color)
+            card.grid(row=0, column=col, padx=5, sticky="nsew")
             value_label = ctk.CTkLabel(
                 card,
                 text="0",
-                font=ctk.CTkFont(size=32, weight="bold"),
-                text_color="#f6f8ff",
+                font=ctk.CTkFont(size=28, weight="bold"),
+                text_color=TEXT_PRIMARY,
             )
-            value_label.pack(pady=(16, 4))
+            value_label.pack(pady=(14, 2))
             ctk.CTkLabel(
                 card,
                 text=title,
                 font=ctk.CTkFont(size=14),
-                text_color="#c8d4ff",
-            ).pack(pady=(0, 14))
+                text_color=TEXT_MUTED,
+            ).pack(pady=(0, 12))
             self.stats_kpi_labels[key] = value_label
 
-        _kpi_card(0, "Всего игр", "games", "#24356f")
-        _kpi_card(1, "Процент побед", "win_rate", "#24356f")
-        _kpi_card(2, "Побед", "wins", "#1e6b5c")
-        _kpi_card(3, "Поражений", "losses", "#742648")
+        _kpi_card(0, "Всего игр", "games", "#2b584b")
+        _kpi_card(1, "Процент побед", "win_rate", "#396856")
+        _kpi_card(2, "Побед", "wins", "#46a85a")
+        _kpi_card(3, "Поражений", "losses", "#8b5b52")
 
         ctk.CTkLabel(
-            panel,
+            page,
             text="Статистика по количеству заключенных",
-            font=ctk.CTkFont(size=30, weight="bold"),
-            text_color="#f3f6ff",
-        ).pack(anchor="w", padx=26, pady=(6, 10))
+            font=ctk.CTkFont(size=26, weight="bold"),
+            text_color=TEXT_PRIMARY,
+        ).pack(anchor="w", padx=160, pady=(12, 18))
 
-        details_row = ctk.CTkFrame(panel, fg_color="transparent")
-        details_row.pack(fill="x", padx=20, pady=(0, 14))
+        controls = ctk.CTkFrame(page, fg_color="transparent")
+        controls.pack(anchor="w", padx=160, pady=(0, 14))
+
+        self.stats_cells_entry = ctk.CTkEntry(
+            controls,
+            width=120,
+            height=34,
+            font=ctk.CTkFont(size=16),
+            fg_color="#547d72",
+            border_color="#91a89c",
+            text_color=TEXT_PRIMARY,
+        )
+        self.stats_cells_entry.pack(side="left", padx=(0, 8))
+        self.stats_cells_entry.insert(0, str(DEFAULT_CELLS))
+
+        self._make_button(
+            controls,
+            "Обновить",
+            command=self.run_stats,
+            fg_color=BLUE,
+            hover_color=BLUE_HOVER,
+            width=120,
+            height=34,
+            font_size=14,
+            corner_radius=8,
+        ).pack(side="left")
+
+        details_row = ctk.CTkFrame(page, fg_color="transparent")
+        details_row.pack(fill="x", padx=135, pady=(0, 20))
         details_row.grid_columnconfigure((0, 1), weight=1)
 
-        def _n_card(col: int, n_value: int) -> None:
-            card = ctk.CTkFrame(
-                details_row,
-                fg_color="#123b8f",
-                corner_radius=14,
-                border_width=1,
-                border_color="#4d72d3",
+        self.stats_n_cards = {}
+
+        def _stat_chip(parent, key: str, title: str, color: str) -> ctk.CTkLabel:
+            chip = self._make_panel(parent, fg_color=color, corner_radius=6, border_width=0)
+            chip.pack(side="left", padx=7)
+            value = ctk.CTkLabel(
+                chip,
+                text="0",
+                font=ctk.CTkFont(size=12, weight="bold"),
+                text_color=TEXT_PRIMARY,
             )
-            card.grid(row=0, column=col, padx=8, pady=4, sticky="nsew")
+            value.pack(padx=18, pady=(6, 0))
+            ctk.CTkLabel(
+                chip,
+                text=title,
+                font=ctk.CTkFont(size=9),
+                text_color=TEXT_MUTED,
+            ).pack(padx=18, pady=(0, 6))
+            return value
+
+        def _n_card(col: int, n_value: int, border: str) -> None:
+            card = self._make_panel(details_row, fg_color=SURFACE_COLOR, corner_radius=14, border_color=border)
+            card.grid(row=0, column=col, padx=14, sticky="nsew")
+
+            head = ctk.CTkFrame(card, fg_color="transparent")
+            head.pack(fill="x", padx=14, pady=(10, 8))
+            badge = self._make_panel(head, fg_color="#2560ff", corner_radius=10, border_width=0)
+            badge.pack(side="left")
+            ctk.CTkLabel(
+                badge,
+                text="P",
+                font=ctk.CTkFont(size=18, weight="bold"),
+                text_color=TEXT_PRIMARY,
+                width=40,
+                height=34,
+            ).pack()
+
+            title_wrap = ctk.CTkFrame(head, fg_color="transparent")
+            title_wrap.pack(side="left", padx=10)
 
             title_label = ctk.CTkLabel(
-                card,
+                title_wrap,
                 text=f"{n_value} заключенных",
-                font=ctk.CTkFont(size=20, weight="bold"),
-                text_color="#f2f6ff",
+                font=ctk.CTkFont(size=17, weight="bold"),
+                text_color=TEXT_PRIMARY,
             )
-            title_label.pack(anchor="w", padx=16, pady=(14, 2))
+            title_label.pack(anchor="w")
             attempts_label = ctk.CTkLabel(
-                card,
+                title_wrap,
                 text=f"Попыток: {n_value // 2}",
-                font=ctk.CTkFont(size=14),
-                text_color="#c5d3ff",
+                font=ctk.CTkFont(size=13),
+                text_color=TEXT_DIM,
             )
-            attempts_label.pack(anchor="w", padx=16, pady=(0, 8))
+            attempts_label.pack(anchor="w")
 
-            games_label = ctk.CTkLabel(
-                card,
-                text="Игр: 0 | Побед: 0 | Поражений: 0",
-                font=ctk.CTkFont(size=14),
-                text_color="#dbe4ff",
-            )
-            games_label.pack(anchor="w", padx=16, pady=4)
+            ctk.CTkFrame(card, fg_color="#d8e8dd", height=1).pack(fill="x", padx=12, pady=(0, 10))
 
-            prisoners_label = ctk.CTkLabel(
+            ctk.CTkLabel(
                 card,
-                text="Заключенные: спасено 0 | потеряно 0",
-                font=ctk.CTkFont(size=14),
-                text_color="#dbe4ff",
-            )
-            prisoners_label.pack(anchor="w", padx=16, pady=4)
+                text="Игры",
+                font=ctk.CTkFont(size=12),
+                text_color=TEXT_MUTED,
+            ).pack(anchor="w", padx=14)
+
+            games_row = ctk.CTkFrame(card, fg_color="transparent")
+            games_row.pack(padx=14, pady=(8, 8))
+            games_label = _stat_chip(games_row, "games", "Всего", "#92a59c")
+            wins_label = _stat_chip(games_row, "wins", "Побед", "#47a962")
+            losses_label = _stat_chip(games_row, "losses", "Поражений", "#8a6257")
+
+            ctk.CTkLabel(
+                card,
+                text="Заключенные",
+                font=ctk.CTkFont(size=12),
+                text_color=TEXT_MUTED,
+            ).pack(anchor="w", padx=14, pady=(2, 0))
+
+            prisoners_row = ctk.CTkFrame(card, fg_color="transparent")
+            prisoners_row.pack(padx=14, pady=(8, 6))
+            saved_label = _stat_chip(prisoners_row, "saved", "Нашли", "#47a962")
+            lost_label = _stat_chip(prisoners_row, "lost", "Проиграли", "#8a6257")
 
             win_rate_label = ctk.CTkLabel(
                 card,
-                text="Процент побед: 0.0%",
-                font=ctk.CTkFont(size=14),
-                text_color="#7ff0ac",
+                text="0.0% успешность",
+                font=ctk.CTkFont(size=15),
+                text_color=TEXT_PRIMARY,
             )
-            win_rate_label.pack(anchor="w", padx=16, pady=(4, 12))
+            win_rate_label.pack(pady=(0, 14))
 
             self.stats_n_cards[n_value] = {
                 "title": title_label,
                 "attempts": attempts_label,
                 "games": games_label,
-                "prisoners": prisoners_label,
+                "wins": wins_label,
+                "losses": losses_label,
+                "saved": saved_label,
+                "lost": lost_label,
                 "win_rate": win_rate_label,
             }
 
-        _n_card(0, 10)
-        _n_card(1, 25)
+        _n_card(0, 10, ACCENT)
+        _n_card(1, 25, BORDER_COLOR)
 
-        fact_card = ctk.CTkFrame(
-            panel,
-            fg_color="#0e4dc4",
-            corner_radius=12,
-            border_width=1,
-            border_color="#4f89ff",
-        )
-        fact_card.pack(fill="x", padx=24, pady=(6, 18))
-
+        fact_card = self._make_panel(page, fg_color=SURFACE_COLOR, corner_radius=8)
+        fact_card.pack(fill="x", padx=146, pady=(0, 26))
         self.stats_fact_label = ctk.CTkLabel(
             fact_card,
-            text=(
-                "Интересный факт: для N=100 стратегия «по циклу» дает около 31.18% "
-                "шанса на общий успех, что на порядки выше случайной."
-            ),
-            font=ctk.CTkFont(size=14),
-            text_color="#dfe9ff",
+            text="Интересный факт:",
+            font=ctk.CTkFont(size=15),
+            text_color=TEXT_MUTED,
             justify="left",
-            wraplength=860,
+            wraplength=760,
         )
-        self.stats_fact_label.pack(anchor="w", padx=16, pady=12)
+        self.stats_fact_label.pack(anchor="w", padx=18, pady=12)
 
         self.run_stats()
-
-    # ---------- actions ----------
 
     def _parse_positive_int(self, text: str) -> Optional[int]:
         value = text.strip()
@@ -516,7 +605,8 @@ class PrisonersApp(ctk.CTk):
         n = int(value) if value.isdigit() else 0
         attempts = n // 2 if n >= 2 else 0
         self.setup_summary_label.configure(
-            text=f"{n}\nПопыток на каждого: {attempts}"
+            text=f"{n}\nПопыток на каждого: {attempts}",
+            text_color="#19ff22" if n >= 2 else TEXT_MUTED,
         )
 
         for btn in self.quick_pick_buttons:
@@ -525,9 +615,9 @@ class PrisonersApp(ctk.CTk):
             except (TypeError, ValueError):
                 continue
             if btn_value == n:
-                btn.configure(fg_color="#0f5dff", hover_color="#0f5dff")
+                btn.configure(fg_color=ACCENT, hover_color=ACCENT)
             else:
-                btn.configure(fg_color="#5a668d", hover_color="#66749f")
+                btn.configure(fg_color="#66887c", hover_color="#739488")
 
     def _set_quick_pick(self, value: int) -> None:
         if not self.cells_entry:
@@ -550,11 +640,9 @@ class PrisonersApp(ctk.CTk):
 
         self.total_cells = n
         self.max_open = self.total_cells // 2
-
         self.prisoner_number = 1
         self.successful_rounds = 0
         self.failed_rounds = 0
-        # В классической задаче расклад коробок фиксирован для всей серии заключенных.
         self.boxes = generate_boxes(self.total_cells)
         self.cell_buttons = []
         self.game_mode = "manual"
@@ -565,69 +653,127 @@ class PrisonersApp(ctk.CTk):
     def _show_gameplay_screen(self) -> None:
         self.clear_container()
 
-        top = ctk.CTkFrame(self.container, fg_color="#2d3f77", corner_radius=14)
-        top.pack(fill="x", padx=24, pady=(20, 10))
+        self.game_header = self._make_panel(self.container, fg_color=SURFACE_COLOR, corner_radius=12)
+        self.game_header.pack(fill="x", padx=8, pady=(4, 10))
 
-        menu_button = ctk.CTkButton(
-            top,
-            text="Главное меню",
-            width=150,
-            height=38,
-            corner_radius=10,
-            fg_color="#56689e",
-            hover_color="#6479b8",
-            font=ctk.CTkFont(size=15, weight="bold"),
-            command=self.show_main_menu,
+        header_top = ctk.CTkFrame(self.game_header, fg_color="transparent")
+        header_top.pack(fill="x", padx=10, pady=(10, 8))
+
+        self._make_button(
+            header_top,
+            "<-  Назад",
+            command=self.show_game_setup,
+            fg_color=RED,
+            hover_color=RED_HOVER,
+            width=88,
+            height=26,
+            font_size=11,
+            corner_radius=8,
+        ).pack(side="left")
+
+        right_controls = ctk.CTkFrame(header_top, fg_color="transparent")
+        right_controls.pack(side="right")
+
+        self.game_attempts_value = ctk.CTkLabel(
+            right_controls,
+            text="0 / 0",
+            font=ctk.CTkFont(size=11),
+            text_color=TEXT_PRIMARY,
+            fg_color="#1ab8b0",
+            corner_radius=8,
+            width=58,
+            height=24,
         )
-        menu_button.pack(side="right", padx=12, pady=12)
+        self.game_attempts_value.pack(side="left", padx=(0, 8))
 
-        controls = ctk.CTkFrame(top, fg_color="transparent")
-        controls.pack(pady=(12, 6))
+        self._make_button(
+            right_controls,
+            "Новая игра",
+            command=self.start_interactive_game,
+            fg_color=GREEN,
+            hover_color=GREEN_HOVER,
+            width=108,
+            height=24,
+            font_size=11,
+            corner_radius=8,
+        ).pack(side="left")
+
+        info_row = ctk.CTkFrame(self.game_header, fg_color="transparent")
+        info_row.pack(fill="x", padx=12, pady=(0, 6))
+
+        self.status_label = ctk.CTkLabel(
+            info_row,
+            text="",
+            font=ctk.CTkFont(size=12),
+            text_color=TEXT_PRIMARY,
+            justify="left",
+        )
+        self.status_label.pack(anchor="w")
+
+        self.counter_label = ctk.CTkLabel(
+            info_row,
+            text="",
+            font=ctk.CTkFont(size=12),
+            text_color=TEXT_MUTED,
+            justify="left",
+        )
+        self.counter_label.pack(anchor="w", pady=(2, 8))
+
+        mode_row = ctk.CTkFrame(self.game_header, fg_color="transparent")
+        mode_row.pack(anchor="e", padx=12, pady=(0, 10))
 
         self.mode_buttons = {}
-        mode_specs = [
-            ("manual", "Каждый"),
-            ("cycle", "Цикл"),
-            ("random", "Случайно"),
-        ]
+        mode_specs = [("manual", "Каждый"), ("cycle", "Цикл"), ("random", "Случайно")]
         for mode_key, label in mode_specs:
-            btn = ctk.CTkButton(
-                controls,
-                text=label,
-                width=140,
-                height=38,
-                corner_radius=10,
-                font=ctk.CTkFont(size=16, weight="bold"),
-                fg_color="#5a668d",
-                hover_color="#66749f",
+            btn = self._make_button(
+                mode_row,
+                label,
                 command=lambda m=mode_key: self._switch_game_mode(m),
+                fg_color="#466d7a",
+                hover_color="#3d6170",
+                width=72,
+                height=24,
+                font_size=10,
+                corner_radius=8,
             )
-            btn.pack(side="left", padx=6)
+            btn.pack(side="left", padx=4)
             self.mode_buttons[mode_key] = btn
         self._refresh_mode_buttons()
 
-        self.status_label = ctk.CTkLabel(
-            top,
-            text="",
-            font=ctk.CTkFont(size=18, weight="bold"),
-            text_color="#f5f7ff",
-        )
-        self.status_label.pack(pady=(12, 6), padx=10)
+        self.game_prisoner_card = self._make_panel(self.container, fg_color=PANEL_COLOR, corner_radius=10)
+        self.game_prisoner_card.pack(fill="x", padx=8, pady=(0, 10))
 
-        self.counter_label = ctk.CTkLabel(
-            top,
-            text="",
-            font=ctk.CTkFont(size=15),
-            text_color="#d8def9",
+        ctk.CTkLabel(
+            self.game_prisoner_card,
+            text="P",
+            font=ctk.CTkFont(size=46, weight="bold"),
+            text_color="#ff9933",
+            width=120,
+            height=80,
+            fg_color="#304d5d",
+            corner_radius=10,
+        ).pack(pady=(18, 8))
+
+        self.prisoner_badge_label = ctk.CTkLabel(
+            self.game_prisoner_card,
+            text="Заключенный #1",
+            font=ctk.CTkFont(size=14),
+            text_color=TEXT_PRIMARY,
+            fg_color="#4b6075",
+            corner_radius=10,
+            width=150,
+            height=24,
         )
-        self.counter_label.pack(pady=(0, 12), padx=10)
+        self.prisoner_badge_label.pack(pady=(0, 12))
+
+        self.game_rules_card = self._make_panel(self.container, fg_color=SURFACE_COLOR, corner_radius=12)
 
     def _refresh_mode_buttons(self) -> None:
         for mode, btn in self.mode_buttons.items():
             if mode == self.game_mode:
-                btn.configure(fg_color="#0f5dff", hover_color="#0f5dff")
+                btn.configure(fg_color="#2e6fe9", hover_color="#2e6fe9")
             else:
-                btn.configure(fg_color="#5a668d", hover_color="#66749f")
+                btn.configure(fg_color="#466d7a", hover_color="#3d6170")
 
     def _switch_game_mode(self, mode: str) -> None:
         if mode not in {"manual", "cycle", "random"}:
@@ -690,15 +836,17 @@ class PrisonersApp(ctk.CTk):
         self.game_finished = False
 
         self._set_status(
-            f"Заключенный #{self.prisoner_number}: найдите число {self.prisoner_number} "
-            f"за максимум {self.max_open} открытий.",
-            "#f5f7ff",
+            f"Заключенный: {self.prisoner_number} / {self.total_cells}\n"
+            f"Попыток осталось: {self.max_open}",
+            TEXT_PRIMARY,
         )
         self._update_counter()
         if self.board_wrap is None or len(self.cell_buttons) != self.total_cells:
             self.render_game_board()
         else:
             self._reset_board_buttons()
+        if self.prisoner_badge_label:
+            self.prisoner_badge_label.configure(text=f"Заключенный #{self.prisoner_number}")
         if self.game_mode in {"cycle", "random"}:
             self._prepare_auto_sequence()
             self._schedule_auto_step()
@@ -711,11 +859,12 @@ class PrisonersApp(ctk.CTk):
         if self.counter_label:
             self.counter_label.configure(
                 text=(
-                    f"Заключенный: {self.prisoner_number}/{self.total_cells} | "
                     f"Открыто: {self.opened_count}/{self.max_open} | "
-                    f"Успехи: {self.successful_rounds} | Провалы: {self.failed_rounds}"
+                    f"Успехи: {self.successful_rounds} | Поражения: {self.failed_rounds}"
                 )
             )
+        if self.game_attempts_value:
+            self.game_attempts_value.configure(text=f"{self.opened_count:02d}")
 
     def render_game_board(self) -> None:
         if self.board_wrap is not None:
@@ -724,17 +873,24 @@ class PrisonersApp(ctk.CTk):
         if self.round_summary is not None:
             self.round_summary.destroy()
             self.round_summary = None
+        if self.game_rules_card is not None:
+            self.game_rules_card.pack_forget()
+
+        board_panel = self._make_panel(self.container, fg_color=SURFACE_COLOR, corner_radius=12)
+        board_panel.pack(fill="both", expand=True, padx=8, pady=(0, 10))
 
         self.board_wrap = ctk.CTkScrollableFrame(
-            self.container,
-            fg_color="#1b2c63",
-            corner_radius=14,
-            height=360,
+            board_panel,
+            fg_color="transparent",
+            scrollbar_button_color="#447b69",
+            scrollbar_button_hover_color="#508774",
         )
-        self.board_wrap.pack(fill="both", expand=True, padx=22, pady=(2, 18))
+        self.board_wrap.pack(fill="both", expand=True, padx=18, pady=18)
         self.cell_buttons = []
 
-        cols = max(6, min(14, int(math.sqrt(self.total_cells)) + 2))
+        cols = max(6, min(10, int(math.sqrt(self.total_cells))))
+        btn_width = 60 if self.total_cells <= 100 else 52
+        btn_height = 44 if self.total_cells <= 100 else 40
 
         for idx in range(self.total_cells):
             row = idx // cols
@@ -742,24 +898,41 @@ class PrisonersApp(ctk.CTk):
             btn = ctk.CTkButton(
                 self.board_wrap,
                 text=str(idx + 1),
-                width=70,
-                height=48,
-                corner_radius=10,
-                fg_color="#3250a3",
-                hover_color="#3f61be",
+                width=btn_width,
+                height=btn_height,
+                corner_radius=6,
+                fg_color=CELL_COLOR,
+                hover_color=CELL_HOVER,
+                text_color=TEXT_PRIMARY,
                 font=ctk.CTkFont(size=16, weight="bold"),
             )
             btn.configure(command=lambda i=idx, b=btn: self.open_cell(i, b))
-            btn.grid(row=row, column=col, padx=6, pady=6)
+            btn.grid(row=row, column=col, padx=5, pady=5)
             self.cell_buttons.append(btn)
+
+        if self.game_rules_card is not None:
+            self.game_rules_card.pack(fill="x", padx=8, pady=(0, 2))
+            ctk.CTkLabel(
+                self.game_rules_card,
+                text=(
+                    "Правила игры:\n\n"
+                    "  * Каждый заключенный должен найти свой номер в 100 ящиках\n"
+                    "  * У каждого заключенного есть 50 попыток\n"
+                    "  * Если хотя бы один заключенный не найдет свой номер - все проигрывают\n"
+                    "  * Стратегия \"ЦИКЛ\" дает около 31% шанса на победу для всех заключенных"
+                ),
+                font=ctk.CTkFont(size=15),
+                text_color=TEXT_PRIMARY,
+                justify="left",
+            ).pack(anchor="w", padx=18, pady=14)
 
     def _reset_board_buttons(self) -> None:
         for idx, btn in enumerate(self.cell_buttons):
             btn.configure(
                 text=str(idx + 1),
                 state="normal",
-                fg_color="#3250a3",
-                hover_color="#3f61be",
+                fg_color=CELL_COLOR,
+                hover_color=CELL_HOVER,
             )
 
     def open_cell(self, idx: int, button: ctk.CTkButton, triggered_by_auto: bool = False) -> None:
@@ -775,12 +948,12 @@ class PrisonersApp(ctk.CTk):
         button.configure(text=str(found), state="disabled")
 
         if found == self.prisoner_number:
-            button.configure(fg_color="#0f9d58", hover_color="#0f9d58")
+            button.configure(fg_color=SUCCESS_COLOR, hover_color=SUCCESS_COLOR)
             self.successful_rounds += 1
             self._finish_round(True)
             return
 
-        button.configure(fg_color="#d93025", hover_color="#d93025")
+        button.configure(fg_color=FAIL_COLOR, hover_color=FAIL_COLOR)
 
         if self.opened_count >= self.max_open:
             self.failed_rounds += 1
@@ -796,11 +969,10 @@ class PrisonersApp(ctk.CTk):
 
         if won:
             self._set_status(
-                f"Заключенный #{self.prisoner_number}: успех. "
-                f"Переход к следующему...",
-                "#90f0a8",
+                f"Заключенный: {self.prisoner_number} / {self.total_cells}\n"
+                "Номер найден. Переход к следующему.",
+                "#b2ffd1",
             )
-            # Переключаемся в следующий тик UI, чтобы новое поле корректно отрисовалось.
             self.after(1, self._next_prisoner_or_finish_game)
         else:
             self._record_completed_game(
@@ -809,9 +981,9 @@ class PrisonersApp(ctk.CTk):
                 saved_prisoners=self.successful_rounds,
             )
             self._set_status(
-                f"Заключенный #{self.prisoner_number}: провал. "
-                f"Игра завершена.",
-                "#ff9d9d",
+                f"Заключенный: {self.prisoner_number} / {self.total_cells}\n"
+                "Номер не найден. Игра завершена.",
+                "#ffd1d1",
             )
             self._show_game_over_summary()
 
@@ -823,7 +995,7 @@ class PrisonersApp(ctk.CTk):
             return
 
         if self.board_wrap is not None:
-            self.board_wrap.destroy()
+            self.board_wrap.master.destroy()
             self.board_wrap = None
         if self.round_summary is not None:
             self.round_summary.destroy()
@@ -836,48 +1008,46 @@ class PrisonersApp(ctk.CTk):
             saved_prisoners=self.successful_rounds,
         )
         self._set_status(
-            f"Серия завершена. Успехов: {self.successful_rounds}/{total}, "
-            f"Провалов: {self.failed_rounds}/{total}.",
-            "#f0f4ff",
+            f"Заключенный: {total} / {total}\n"
+            f"Серия завершена. Успехов: {self.successful_rounds}, поражений: {self.failed_rounds}.",
+            TEXT_PRIMARY,
         )
         self._update_counter()
 
-        self.round_summary = ctk.CTkFrame(self.container, fg_color="#1b2c63", corner_radius=14)
-        self.round_summary.pack(fill="x", padx=22, pady=(8, 18))
+        self.round_summary = self._make_panel(self.container, fg_color=SURFACE_COLOR, corner_radius=12)
+        self.round_summary.pack(fill="x", padx=8, pady=(8, 10))
 
         ctk.CTkLabel(
             self.round_summary,
-            text="Серия заключенных пройдена.",
-            font=ctk.CTkFont(size=18, weight="bold"),
-            text_color="#f3f5ff",
+            text="Серия заключенных пройдена",
+            font=ctk.CTkFont(size=20, weight="bold"),
+            text_color=TEXT_PRIMARY,
         ).pack(pady=(14, 8))
 
         ctk.CTkLabel(
             self.round_summary,
-            text=(
-                f"Успешно нашли номер: {self.successful_rounds}\n"
-                f"Не нашли номер: {self.failed_rounds}"
-            ),
-            font=ctk.CTkFont(size=16),
-            text_color="#d6ddff",
+            text=f"Успешно нашли номер: {self.successful_rounds}\nНе нашли номер: {self.failed_rounds}",
+            font=ctk.CTkFont(size=15),
+            text_color=TEXT_MUTED,
             justify="center",
-        ).pack(pady=(0, 12))
+        ).pack(pady=(0, 10))
 
-        ctk.CTkButton(
+        self._make_button(
             self.round_summary,
-            text="Запустить серию заново",
+            "Новая игра",
             command=self.start_interactive_game,
-            width=240,
-            height=42,
-            fg_color="#1140ff",
-            hover_color="#0f35d8",
-            font=ctk.CTkFont(size=16, weight="bold"),
+            fg_color=GREEN,
+            hover_color=GREEN_HOVER,
+            width=180,
+            height=40,
+            font_size=15,
+            bold=True,
         ).pack(pady=(0, 14))
 
     def _show_game_over_summary(self) -> None:
         self._cancel_auto_job()
         if self.board_wrap is not None:
-            self.board_wrap.destroy()
+            self.board_wrap.master.destroy()
             self.board_wrap = None
         if self.round_summary is not None:
             self.round_summary.destroy()
@@ -885,14 +1055,14 @@ class PrisonersApp(ctk.CTk):
 
         self._update_counter()
 
-        self.round_summary = ctk.CTkFrame(self.container, fg_color="#1b2c63", corner_radius=14)
-        self.round_summary.pack(fill="x", padx=22, pady=(8, 18))
+        self.round_summary = self._make_panel(self.container, fg_color=SURFACE_COLOR, corner_radius=12)
+        self.round_summary.pack(fill="x", padx=8, pady=(8, 10))
 
         ctk.CTkLabel(
             self.round_summary,
-            text=f"Игра завершена: не найден номер за {self.max_open} попыток.",
+            text=f"Игра завершена: номер не найден за {self.max_open} попыток",
             font=ctk.CTkFont(size=18, weight="bold"),
-            text_color="#ffb0b0",
+            text_color="#ffd1d1",
         ).pack(pady=(14, 8))
 
         ctk.CTkLabel(
@@ -901,20 +1071,21 @@ class PrisonersApp(ctk.CTk):
                 f"Успешно пройдено заключенных: {self.successful_rounds}\n"
                 f"Провал на заключенном: #{self.prisoner_number}"
             ),
-            font=ctk.CTkFont(size=16),
-            text_color="#d6ddff",
+            font=ctk.CTkFont(size=15),
+            text_color=TEXT_MUTED,
             justify="center",
-        ).pack(pady=(0, 12))
+        ).pack(pady=(0, 10))
 
-        ctk.CTkButton(
+        self._make_button(
             self.round_summary,
-            text="Начать заново",
+            "Новая игра",
             command=self.start_interactive_game,
-            width=240,
-            height=42,
-            fg_color="#1140ff",
-            hover_color="#0f35d8",
-            font=ctk.CTkFont(size=16, weight="bold"),
+            fg_color=GREEN,
+            hover_color=GREEN_HOVER,
+            width=180,
+            height=40,
+            font_size=15,
+            bold=True,
         ).pack(pady=(0, 14))
 
     def run_stats(self) -> None:
@@ -922,14 +1093,12 @@ class PrisonersApp(ctk.CTk):
             return
 
         n = self._parse_positive_int(self.stats_cells_entry.get())
-
         if n is None:
-            self._set_status("Ошибка: количество заключенных должно быть целым числом > 1.", "#ffb0b0")
+            self._set_status("Количество заключенных должно быть целым числом больше 1.", "#ffb0b0")
             return
 
         self.stats_detail_ns = [n, 100]
-        self._set_status("Показаны сохраненные результаты игр.", "#b6cbff")
-
+        self._set_status("Показаны сохраненные результаты игр.", TEXT_MUTED)
         total_summary = self.stats_store.total_summary()
 
         if self.stats_kpi_labels:
@@ -946,30 +1115,22 @@ class PrisonersApp(ctk.CTk):
 
             labels["title"].configure(text=f"{n_value} заключенных")
             labels["attempts"].configure(text=f"Попыток: {n_value // 2}")
-            labels["games"].configure(
-                text=(
-                    f"Игр: {n_summary['games']} | Побед: {n_summary['wins']} | "
-                    f"Поражений: {n_summary['losses']}"
-                )
-            )
-            labels["prisoners"].configure(
-                text=(
-                    f"Заключенные: спасено {n_summary['saved_prisoners']} | "
-                    f"потеряно {n_summary['lost_prisoners']}"
-                )
-            )
-            labels["win_rate"].configure(text=f"Процент побед: {n_summary['win_rate']:.1f}%")
+            labels["games"].configure(text=str(n_summary["games"]))
+            labels["wins"].configure(text=str(n_summary["wins"]))
+            labels["losses"].configure(text=str(n_summary["losses"]))
+            labels["saved"].configure(text=str(n_summary["saved_prisoners"]))
+            labels["lost"].configure(text=str(n_summary["lost_prisoners"]))
+            labels["win_rate"].configure(text=f"{n_summary['win_rate']:.1f}% успешность")
 
         if self.stats_fact_label:
             theory_100 = theoretical_optimal_success_rate(100)
             theory_100_random = theoretical_random_success_rate(100)
             self.stats_fact_label.configure(
                 text=(
-                    "Интересный факт: теоретически для N=100 стратегия «по циклу» "
-                    f"дает около {theory_100:.2f}% успеха, а случайная около "
-                    f"{theory_100_random:.30f}%. "
-                    f"В ваших играх суммарно спасено {total_summary['saved_prisoners']}, "
-                    f"потеряно {total_summary['lost_prisoners']}."
+                    "Интересный факт:\n"
+                    "При использовании стратегии \"следования по циклу\" вероятность успеха всех 100 "
+                    f"заключенных составляет около {theory_100:.0f}%, что намного выше случайных "
+                    f"{theory_100_random:.30f}%."
                 )
             )
 
