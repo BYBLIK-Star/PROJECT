@@ -1,5 +1,6 @@
 import math
 import random
+import tkinter as tk
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -36,6 +37,8 @@ CELL_COLOR = "#85988f"
 CELL_HOVER = "#92a39b"
 SUCCESS_COLOR = "#45aa61"
 FAIL_COLOR = "#bf675b"
+TEXT_FONT_FAMILY = "Jacques Francois Shadow"
+NUMBER_FONT_FAMILY = "Abel"
 
 
 class PrisonersApp(ctk.CTk):
@@ -82,7 +85,8 @@ class PrisonersApp(ctk.CTk):
         self.game_attempts_value: Optional[ctk.CTkLabel] = None
         self.prisoner_badge_label: Optional[ctk.CTkLabel] = None
         self.cell_buttons: List[ctk.CTkButton] = []
-        self.setup_summary_label: Optional[ctk.CTkLabel] = None
+        self.setup_summary_value_label: Optional[ctk.CTkLabel] = None
+        self.setup_summary_attempts_label: Optional[ctk.CTkLabel] = None
         self.quick_pick_buttons: List[ctk.CTkButton] = []
         self.mode_buttons: Dict[str, ctk.CTkButton] = {}
         self.game_mode = "manual"
@@ -133,6 +137,55 @@ class PrisonersApp(ctk.CTk):
             border_color=border_color,
         )
 
+    def _text_font(self, size: int, *, bold: bool = False) -> ctk.CTkFont:
+        return ctk.CTkFont(
+            family=TEXT_FONT_FAMILY,
+            size=size,
+            weight="bold" if bold else "normal",
+        )
+
+    def _number_font(self, size: int, *, bold: bool = False) -> ctk.CTkFont:
+        return ctk.CTkFont(
+            family=NUMBER_FONT_FAMILY,
+            size=size,
+            weight="bold" if bold else "normal",
+        )
+
+    def _make_people_badge(self, parent) -> ctk.CTkFrame:
+        badge = ctk.CTkFrame(parent, fg_color="transparent", width=86, height=44)
+        badge.pack(side="left")
+        badge.pack_propagate(False)
+
+        canvas = tk.Canvas(
+            badge,
+            width=86,
+            height=44,
+            bg=BG_COLOR,
+            highlightthickness=0,
+            bd=0,
+        )
+        canvas.pack(fill="both", expand=True)
+
+        def _rounded_rect(x1: int, y1: int, x2: int, y2: int, radius: int, fill: str) -> None:
+            canvas.create_rectangle(x1 + radius, y1, x2 - radius, y2, fill=fill, outline=fill)
+            canvas.create_rectangle(x1, y1 + radius, x2, y2 - radius, fill=fill, outline=fill)
+            canvas.create_oval(x1, y1, x1 + radius * 2, y1 + radius * 2, fill=fill, outline=fill)
+            canvas.create_oval(x2 - radius * 2, y1, x2, y1 + radius * 2, fill=fill, outline=fill)
+            canvas.create_oval(x1, y2 - radius * 2, x1 + radius * 2, y2, fill=fill, outline=fill)
+            canvas.create_oval(x2 - radius * 2, y2 - radius * 2, x2, y2, fill=fill, outline=fill)
+
+        badge_fill = "#1608ff"
+        stroke = "#eef2ff"
+        _rounded_rect(2, 2, 84, 42, 20, badge_fill)
+
+        canvas.create_oval(28, 10, 43, 25, outline=stroke, width=2)
+        canvas.create_arc(18, 22, 54, 46, start=15, extent=150, style="arc", outline=stroke, width=2)
+
+        canvas.create_oval(46, 12, 58, 24, outline=stroke, width=1)
+        canvas.create_arc(40, 23, 67, 43, start=18, extent=144, style="arc", outline=stroke, width=1)
+
+        return badge
+
     def _make_button(
         self,
         parent,
@@ -145,6 +198,7 @@ class PrisonersApp(ctk.CTk):
         height: int,
         font_size: int,
         bold: bool = False,
+        numeric: bool = False,
         corner_radius: int = 12,
         text_color: str = TEXT_PRIMARY,
     ) -> ctk.CTkButton:
@@ -158,7 +212,7 @@ class PrisonersApp(ctk.CTk):
             width=width,
             height=height,
             corner_radius=corner_radius,
-            font=ctk.CTkFont(size=font_size, weight="bold" if bold else "normal"),
+            font=self._number_font(font_size, bold=bold) if numeric else self._text_font(font_size, bold=bold),
         )
 
     def show_main_menu(self) -> None:
@@ -173,7 +227,7 @@ class PrisonersApp(ctk.CTk):
         ctk.CTkLabel(
             content,
             text="100 заключенных",
-            font=ctk.CTkFont(size=28, weight="normal"),
+            font=self._text_font(28),
             text_color=TEXT_PRIMARY,
         ).pack(pady=(0, 18))
 
@@ -213,7 +267,7 @@ class PrisonersApp(ctk.CTk):
         ctk.CTkLabel(
             content,
             text="Классическая логическая задача\nНайдите свой номер среди 100 ящиков",
-            font=ctk.CTkFont(size=16),
+            font=self._text_font(16),
             text_color=TEXT_MUTED,
             justify="center",
         ).pack(pady=(18, 0))
@@ -230,7 +284,7 @@ class PrisonersApp(ctk.CTk):
         ctk.CTkLabel(
             body,
             text="Настройка игры",
-            font=ctk.CTkFont(size=36, weight="bold"),
+            font=self._text_font(36, bold=True),
             text_color=TEXT_PRIMARY,
         ).pack(pady=(0, 24))
 
@@ -240,7 +294,7 @@ class PrisonersApp(ctk.CTk):
         ctk.CTkLabel(
             title_row,
             text="Количество заключенных:",
-            font=ctk.CTkFont(size=22, weight="bold"),
+            font=self._text_font(22, bold=True),
             text_color="#0c1110",
         ).pack(anchor="w")
 
@@ -250,7 +304,7 @@ class PrisonersApp(ctk.CTk):
         ctk.CTkLabel(
             input_card,
             text="Введите число (от 2 до 1000):",
-            font=ctk.CTkFont(size=13, weight="bold"),
+            font=self._text_font(13, bold=True),
             text_color=TEXT_MUTED,
         ).pack(anchor="w", padx=20, pady=(12, 6))
 
@@ -259,7 +313,7 @@ class PrisonersApp(ctk.CTk):
             width=220,
             height=44,
             justify="center",
-            font=ctk.CTkFont(size=24, weight="bold"),
+            font=self._number_font(24, bold=True),
             fg_color="#547d72",
             border_color="#91a89c",
             text_color=TEXT_PRIMARY,
@@ -271,19 +325,28 @@ class PrisonersApp(ctk.CTk):
         summary_card = self._make_panel(body, fg_color=SURFACE_DARK, corner_radius=10, border_width=0)
         summary_card.pack(fill="x", pady=(0, 18))
 
-        self.setup_summary_label = ctk.CTkLabel(
+        self.setup_summary_value_label = ctk.CTkLabel(
             summary_card,
-            text="100\nПопыток на каждого: 50",
-            font=ctk.CTkFont(size=19),
+            text="100",
+            font=self._number_font(24, bold=True),
+            text_color="#19ff22",
+            justify="center",
+        )
+        self.setup_summary_value_label.pack(pady=(12, 2))
+
+        self.setup_summary_attempts_label = ctk.CTkLabel(
+            summary_card,
+            text="Попыток на каждого: 50",
+            font=self._text_font(15),
             text_color=TEXT_MUTED,
             justify="center",
         )
-        self.setup_summary_label.pack(pady=14)
+        self.setup_summary_attempts_label.pack(pady=(0, 12))
 
         ctk.CTkLabel(
             body,
             text="Быстрый выбор:",
-            font=ctk.CTkFont(size=16),
+            font=self._text_font(16),
             text_color=TEXT_PRIMARY,
         ).pack(anchor="w", pady=(0, 10))
 
@@ -303,6 +366,7 @@ class PrisonersApp(ctk.CTk):
                 width=110,
                 height=34,
                 font_size=17,
+                numeric=True,
                 corner_radius=6,
             )
             btn.grid(row=row, column=col, padx=8, pady=6)
@@ -334,7 +398,7 @@ class PrisonersApp(ctk.CTk):
         self.status_label = ctk.CTkLabel(
             self.container,
             text="",
-            font=ctk.CTkFont(size=15, weight="bold"),
+            font=self._text_font(15, bold=True),
             text_color="#ffb0b0",
         )
         self.status_label.pack(side="bottom", pady=(0, 10))
@@ -385,21 +449,21 @@ class PrisonersApp(ctk.CTk):
         ctk.CTkLabel(
             header,
             text="Статистика",
-            font=ctk.CTkFont(size=38, weight="bold"),
+            font=self._text_font(38, bold=True),
             text_color=TEXT_PRIMARY,
         ).pack(anchor="w", padx=54, pady=(0, 6))
 
         ctk.CTkLabel(
             header,
             text="Общая статистика",
-            font=ctk.CTkFont(size=18, weight="bold"),
+            font=self._text_font(18, bold=True),
             text_color=TEXT_PRIMARY,
         ).pack(anchor="w", padx=64, pady=(0, 14))
 
         self.status_label = ctk.CTkLabel(
             header,
             text="",
-            font=ctk.CTkFont(size=13, weight="bold"),
+            font=self._text_font(13, bold=True),
             text_color=TEXT_MUTED,
         )
         self.status_label.pack(anchor="w", padx=64, pady=(0, 8))
@@ -415,14 +479,14 @@ class PrisonersApp(ctk.CTk):
             value_label = ctk.CTkLabel(
                 card,
                 text="0",
-                font=ctk.CTkFont(size=28, weight="bold"),
+                font=self._number_font(28, bold=True),
                 text_color=TEXT_PRIMARY,
             )
             value_label.pack(pady=(14, 2))
             ctk.CTkLabel(
                 card,
                 text=title,
-                font=ctk.CTkFont(size=14),
+                font=self._text_font(14),
                 text_color=TEXT_MUTED,
             ).pack(pady=(0, 12))
             self.stats_kpi_labels[key] = value_label
@@ -435,7 +499,7 @@ class PrisonersApp(ctk.CTk):
         ctk.CTkLabel(
             page,
             text="Статистика по количеству заключенных",
-            font=ctk.CTkFont(size=26, weight="bold"),
+            font=self._text_font(26, bold=True),
             text_color=TEXT_PRIMARY,
         ).pack(anchor="w", padx=160, pady=(12, 18))
 
@@ -446,7 +510,7 @@ class PrisonersApp(ctk.CTk):
             controls,
             width=120,
             height=34,
-            font=ctk.CTkFont(size=16),
+            font=self._number_font(16),
             fg_color="#547d72",
             border_color="#91a89c",
             text_color=TEXT_PRIMARY,
@@ -478,14 +542,14 @@ class PrisonersApp(ctk.CTk):
             value = ctk.CTkLabel(
                 chip,
                 text="0",
-                font=ctk.CTkFont(size=12, weight="bold"),
+                font=self._number_font(12, bold=True),
                 text_color=TEXT_PRIMARY,
             )
             value.pack(padx=18, pady=(6, 0))
             ctk.CTkLabel(
                 chip,
                 text=title,
-                font=ctk.CTkFont(size=9),
+                font=self._text_font(9),
                 text_color=TEXT_MUTED,
             ).pack(padx=18, pady=(0, 6))
             return value
@@ -496,16 +560,7 @@ class PrisonersApp(ctk.CTk):
 
             head = ctk.CTkFrame(card, fg_color="transparent")
             head.pack(fill="x", padx=14, pady=(10, 8))
-            badge = self._make_panel(head, fg_color="#2560ff", corner_radius=10, border_width=0)
-            badge.pack(side="left")
-            ctk.CTkLabel(
-                badge,
-                text="P",
-                font=ctk.CTkFont(size=18, weight="bold"),
-                text_color=TEXT_PRIMARY,
-                width=40,
-                height=34,
-            ).pack()
+            self._make_people_badge(head)
 
             title_wrap = ctk.CTkFrame(head, fg_color="transparent")
             title_wrap.pack(side="left", padx=10)
@@ -513,14 +568,14 @@ class PrisonersApp(ctk.CTk):
             title_label = ctk.CTkLabel(
                 title_wrap,
                 text=f"{n_value} заключенных",
-                font=ctk.CTkFont(size=17, weight="bold"),
+                font=self._text_font(17, bold=True),
                 text_color=TEXT_PRIMARY,
             )
             title_label.pack(anchor="w")
             attempts_label = ctk.CTkLabel(
                 title_wrap,
                 text=f"Попыток: {n_value // 2}",
-                font=ctk.CTkFont(size=13),
+                font=self._number_font(13),
                 text_color=TEXT_DIM,
             )
             attempts_label.pack(anchor="w")
@@ -530,7 +585,7 @@ class PrisonersApp(ctk.CTk):
             ctk.CTkLabel(
                 card,
                 text="Игры",
-                font=ctk.CTkFont(size=12),
+                font=self._text_font(12),
                 text_color=TEXT_MUTED,
             ).pack(anchor="w", padx=14)
 
@@ -543,7 +598,7 @@ class PrisonersApp(ctk.CTk):
             ctk.CTkLabel(
                 card,
                 text="Заключенные",
-                font=ctk.CTkFont(size=12),
+                font=self._text_font(12),
                 text_color=TEXT_MUTED,
             ).pack(anchor="w", padx=14, pady=(2, 0))
 
@@ -555,7 +610,7 @@ class PrisonersApp(ctk.CTk):
             win_rate_label = ctk.CTkLabel(
                 card,
                 text="0.0% успешность",
-                font=ctk.CTkFont(size=15),
+                font=self._number_font(15),
                 text_color=TEXT_PRIMARY,
             )
             win_rate_label.pack(pady=(0, 14))
@@ -579,7 +634,7 @@ class PrisonersApp(ctk.CTk):
         self.stats_fact_label = ctk.CTkLabel(
             fact_card,
             text="Интересный факт:",
-            font=ctk.CTkFont(size=15),
+            font=self._text_font(15),
             text_color=TEXT_MUTED,
             justify="left",
             wraplength=760,
@@ -598,16 +653,17 @@ class PrisonersApp(ctk.CTk):
         return number
 
     def _refresh_setup_preview(self) -> None:
-        if not self.cells_entry or not self.setup_summary_label:
+        if not self.cells_entry or not self.setup_summary_value_label or not self.setup_summary_attempts_label:
             return
 
         value = self.cells_entry.get().strip()
         n = int(value) if value.isdigit() else 0
         attempts = n // 2 if n >= 2 else 0
-        self.setup_summary_label.configure(
-            text=f"{n}\nПопыток на каждого: {attempts}",
+        self.setup_summary_value_label.configure(
+            text=str(n),
             text_color="#19ff22" if n >= 2 else TEXT_MUTED,
         )
+        self.setup_summary_attempts_label.configure(text=f"Попыток на каждого: {attempts}")
 
         for btn in self.quick_pick_buttons:
             try:
@@ -677,7 +733,7 @@ class PrisonersApp(ctk.CTk):
         self.game_attempts_value = ctk.CTkLabel(
             right_controls,
             text="0 / 0",
-            font=ctk.CTkFont(size=11),
+            font=self._number_font(11),
             text_color=TEXT_PRIMARY,
             fg_color="#1ab8b0",
             corner_radius=8,
@@ -704,7 +760,7 @@ class PrisonersApp(ctk.CTk):
         self.status_label = ctk.CTkLabel(
             info_row,
             text="",
-            font=ctk.CTkFont(size=12),
+            font=self._text_font(12),
             text_color=TEXT_PRIMARY,
             justify="left",
         )
@@ -713,7 +769,7 @@ class PrisonersApp(ctk.CTk):
         self.counter_label = ctk.CTkLabel(
             info_row,
             text="",
-            font=ctk.CTkFont(size=12),
+            font=self._text_font(12),
             text_color=TEXT_MUTED,
             justify="left",
         )
@@ -746,7 +802,7 @@ class PrisonersApp(ctk.CTk):
         ctk.CTkLabel(
             self.game_prisoner_card,
             text="P",
-            font=ctk.CTkFont(size=46, weight="bold"),
+            font=self._text_font(46, bold=True),
             text_color="#ff9933",
             width=120,
             height=80,
@@ -757,7 +813,7 @@ class PrisonersApp(ctk.CTk):
         self.prisoner_badge_label = ctk.CTkLabel(
             self.game_prisoner_card,
             text="Заключенный #1",
-            font=ctk.CTkFont(size=14),
+            font=self._text_font(14),
             text_color=TEXT_PRIMARY,
             fg_color="#4b6075",
             corner_radius=10,
@@ -889,8 +945,9 @@ class PrisonersApp(ctk.CTk):
         self.cell_buttons = []
 
         cols = max(6, min(10, int(math.sqrt(self.total_cells))))
-        btn_width = 60 if self.total_cells <= 100 else 52
-        btn_height = 44 if self.total_cells <= 100 else 40
+        btn_size = 60 if self.total_cells <= 100 else 52
+        for col in range(cols):
+            self.board_wrap.grid_columnconfigure(col, weight=1, uniform="board")
 
         for idx in range(self.total_cells):
             row = idx // cols
@@ -898,16 +955,16 @@ class PrisonersApp(ctk.CTk):
             btn = ctk.CTkButton(
                 self.board_wrap,
                 text=str(idx + 1),
-                width=btn_width,
-                height=btn_height,
+                width=btn_size,
+                height=btn_size,
                 corner_radius=6,
                 fg_color=CELL_COLOR,
                 hover_color=CELL_HOVER,
                 text_color=TEXT_PRIMARY,
-                font=ctk.CTkFont(size=16, weight="bold"),
+                font=self._number_font(16, bold=True),
             )
             btn.configure(command=lambda i=idx, b=btn: self.open_cell(i, b))
-            btn.grid(row=row, column=col, padx=5, pady=5)
+            btn.grid(row=row, column=col, padx=1, pady=1)
             self.cell_buttons.append(btn)
 
         if self.game_rules_card is not None:
@@ -921,7 +978,7 @@ class PrisonersApp(ctk.CTk):
                     "  * Если хотя бы один заключенный не найдет свой номер - все проигрывают\n"
                     "  * Стратегия \"ЦИКЛ\" дает около 31% шанса на победу для всех заключенных"
                 ),
-                font=ctk.CTkFont(size=15),
+                font=self._text_font(15),
                 text_color=TEXT_PRIMARY,
                 justify="left",
             ).pack(anchor="w", padx=18, pady=14)
@@ -1020,14 +1077,14 @@ class PrisonersApp(ctk.CTk):
         ctk.CTkLabel(
             self.round_summary,
             text="Серия заключенных пройдена",
-            font=ctk.CTkFont(size=20, weight="bold"),
+            font=self._text_font(20, bold=True),
             text_color=TEXT_PRIMARY,
         ).pack(pady=(14, 8))
 
         ctk.CTkLabel(
             self.round_summary,
             text=f"Успешно нашли номер: {self.successful_rounds}\nНе нашли номер: {self.failed_rounds}",
-            font=ctk.CTkFont(size=15),
+            font=self._text_font(15),
             text_color=TEXT_MUTED,
             justify="center",
         ).pack(pady=(0, 10))
@@ -1061,7 +1118,7 @@ class PrisonersApp(ctk.CTk):
         ctk.CTkLabel(
             self.round_summary,
             text=f"Игра завершена: номер не найден за {self.max_open} попыток",
-            font=ctk.CTkFont(size=18, weight="bold"),
+            font=self._text_font(18, bold=True),
             text_color="#ffd1d1",
         ).pack(pady=(14, 8))
 
@@ -1071,7 +1128,7 @@ class PrisonersApp(ctk.CTk):
                 f"Успешно пройдено заключенных: {self.successful_rounds}\n"
                 f"Провал на заключенном: #{self.prisoner_number}"
             ),
-            font=ctk.CTkFont(size=15),
+            font=self._text_font(15),
             text_color=TEXT_MUTED,
             justify="center",
         ).pack(pady=(0, 10))
