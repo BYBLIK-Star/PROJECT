@@ -179,7 +179,7 @@ class PrisonersApp(ctk.CTk):
 
         self._make_button(
             content,
-            "Play     Играть",
+            "Играть",
             command=self.show_game_setup,
             fg_color=GREEN,
             hover_color=GREEN_HOVER,
@@ -190,7 +190,7 @@ class PrisonersApp(ctk.CTk):
 
         self._make_button(
             content,
-            "Stat     Статистика",
+            "Статистика",
             command=self.show_stats_page,
             fg_color=BLUE,
             hover_color=BLUE_HOVER,
@@ -201,7 +201,7 @@ class PrisonersApp(ctk.CTk):
 
         self._make_button(
             content,
-            "Exit     Выйти",
+            "Выйти",
             command=self.destroy,
             fg_color=RED,
             hover_color=RED_HOVER,
@@ -310,7 +310,7 @@ class PrisonersApp(ctk.CTk):
 
         self._make_button(
             body,
-            "Play  Начать игру",
+            "Начать игру",
             command=self.start_interactive_game,
             fg_color=GREEN,
             hover_color=GREEN_HOVER,
