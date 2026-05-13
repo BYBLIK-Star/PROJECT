@@ -1,10 +1,25 @@
 import math
 import random
+import time
 import tkinter as tk
+from csv import DictWriter
+from io import BytesIO
+import json
 from pathlib import Path
 from typing import Dict, List, Optional
+import xml.etree.ElementTree as ET
 
 import customtkinter as ctk
+
+try:
+    from PIL import Image
+except ImportError:
+    Image = None
+
+try:
+    import cairosvg
+except ImportError:
+    cairosvg = None
 
 from game_logic import (
     DEFAULT_CELLS,
@@ -39,6 +54,8 @@ SUCCESS_COLOR = "#45aa61"
 FAIL_COLOR = "#bf675b"
 TEXT_FONT_FAMILY = "Jacques Francois Shadow"
 NUMBER_FONT_FAMILY = "Abel"
+ASSETS_DIR = Path(__file__).with_name("assets") / "icons"
+EXPORTS_DIR = Path(__file__).with_name("exports")
 
 
 class PrisonersApp(ctk.CTk):
@@ -74,6 +91,7 @@ class PrisonersApp(ctk.CTk):
         self.stats_kpi_labels: Dict[str, ctk.CTkLabel] = {}
         self.stats_n_cards: Dict[int, Dict[str, ctk.CTkLabel]] = {}
         self.stats_fact_label: Optional[ctk.CTkLabel] = None
+        self.export_status_label: Optional[ctk.CTkLabel] = None
         self.stats_store = StatsStore(STATS_DB, legacy_json_path=LEGACY_STATS_FILE)
         self.stats_detail_ns: List[int] = [10, 25]
         self.board_wrap: Optional[ctk.CTkScrollableFrame] = None
@@ -93,11 +111,15 @@ class PrisonersApp(ctk.CTk):
         self.auto_job: Optional[str] = None
         self.auto_sequence: List[int] = []
         self.auto_step_index = 0
+        self.timer_job: Optional[str] = None
+        self.timer_started_at: Optional[float] = None
+        self.icon_images: Dict[str, object] = {}
 
         self.show_main_menu()
 
     def clear_container(self) -> None:
         self._cancel_auto_job()
+        self._cancel_timer_job()
         for child in self.container.winfo_children():
             child.destroy()
         self.board_wrap = None
@@ -108,6 +130,7 @@ class PrisonersApp(ctk.CTk):
         self.game_status_value = None
         self.game_attempts_value = None
         self.prisoner_badge_label = None
+        self.export_status_label = None
 
     def _record_completed_game(self, won: bool, total_prisoners: int, saved_prisoners: int) -> None:
         try:
@@ -186,6 +209,63 @@ class PrisonersApp(ctk.CTk):
 
         return badge
 
+    def _get_icon(self, name: str, size: tuple[int, int], color: str) -> object | None:
+        key = f"{name}:{size[0]}:{size[1]}:{color}"
+        if key in self.icon_images:
+            return self.icon_images[key]
+
+        if Image is None or cairosvg is None:
+            return None
+
+        icon_path = ASSETS_DIR / f"{name}.svg"
+        if not icon_path.exists():
+            return None
+
+        try:
+            svg_text = icon_path.read_text(encoding="utf-8").replace("currentColor", color)
+            png_bytes = cairosvg.svg2png(
+                bytestring=svg_text.encode("utf-8"),
+                output_width=size[0],
+                output_height=size[1],
+            )
+            image = ctk.CTkImage(
+                light_image=Image.open(BytesIO(png_bytes)),
+                dark_image=Image.open(BytesIO(png_bytes)),
+                size=size,
+            )
+        except Exception:
+            return None
+
+        self.icon_images[key] = image
+        return image
+
+    def _button_label(self, text: str, icon_name: str, size: tuple[int, int], color: str) -> tuple[str, object | None]:
+        icon = self._get_icon(icon_name, size, color)
+        if icon is not None:
+            return text, icon
+        return text, None
+
+    def _icon_only(self, icon_name: str, size: tuple[int, int], color: str) -> object | None:
+        return self._get_icon(icon_name, size, color)
+
+    def _make_icon_label(
+        self,
+        parent,
+        *,
+        icon_name: str,
+        size: tuple[int, int],
+        color: str,
+        fallback_text: str = "",
+        **kwargs,
+    ) -> ctk.CTkLabel:
+        icon = self._get_icon(icon_name, size, color)
+        return ctk.CTkLabel(
+            parent,
+            text="" if icon is not None else fallback_text,
+            image=icon,
+            **kwargs,
+        )
+
     def _make_button(
         self,
         parent,
@@ -201,6 +281,9 @@ class PrisonersApp(ctk.CTk):
         numeric: bool = False,
         corner_radius: int = 12,
         text_color: str = TEXT_PRIMARY,
+        image=None,
+        compound: str = "left",
+        anchor: str = "center",
     ) -> ctk.CTkButton:
         return ctk.CTkButton(
             parent,
@@ -213,6 +296,9 @@ class PrisonersApp(ctk.CTk):
             height=height,
             corner_radius=corner_radius,
             font=self._number_font(font_size, bold=bold) if numeric else self._text_font(font_size, bold=bold),
+            image=image,
+            compound=compound,
+            anchor=anchor,
         )
 
     def show_main_menu(self) -> None:
@@ -231,37 +317,43 @@ class PrisonersApp(ctk.CTk):
             text_color=TEXT_PRIMARY,
         ).pack(pady=(0, 18))
 
+        play_text, play_icon = self._button_label("Играть", "play", (28, 32), TEXT_PRIMARY)
         self._make_button(
             content,
-            "Играть",
+            play_text,
             command=self.show_game_setup,
             fg_color=GREEN,
             hover_color=GREEN_HOVER,
             width=315,
             height=68,
             font_size=26,
+            image=play_icon,
         ).pack(pady=6)
 
+        stats_text, stats_icon = self._button_label("Статистика", "stats", (30, 29), TEXT_PRIMARY)
         self._make_button(
             content,
-            "Статистика",
+            stats_text,
             command=self.show_stats_page,
             fg_color=BLUE,
             hover_color=BLUE_HOVER,
             width=315,
             height=68,
             font_size=24,
+            image=stats_icon,
         ).pack(pady=6)
 
+        exit_text, exit_icon = self._button_label("Выйти", "exit", (24, 28), TEXT_PRIMARY)
         self._make_button(
             content,
-            "Выйти",
+            exit_text,
             command=self.destroy,
             fg_color=RED,
             hover_color=RED_HOVER,
             width=315,
             height=68,
             font_size=24,
+            image=exit_icon,
         ).pack(pady=6)
 
         ctk.CTkLabel(
@@ -291,12 +383,21 @@ class PrisonersApp(ctk.CTk):
         title_row = ctk.CTkFrame(body, fg_color="transparent")
         title_row.pack(fill="x", pady=(0, 12))
 
+        setup_icon = self._icon_only("number_of_prisoners", (30, 26), "#292929")
+        if setup_icon is not None:
+            ctk.CTkLabel(
+                title_row,
+                text="",
+                image=setup_icon,
+                fg_color="transparent",
+            ).pack(side="left", padx=(0, 10))
+
         ctk.CTkLabel(
             title_row,
             text="Количество заключенных:",
             font=self._text_font(22, bold=True),
             text_color="#0c1110",
-        ).pack(anchor="w")
+        ).pack(side="left")
 
         input_card = self._make_panel(body, fg_color=SURFACE_DARK, corner_radius=10, border_width=0)
         input_card.pack(fill="x", pady=(0, 10))
@@ -372,9 +473,10 @@ class PrisonersApp(ctk.CTk):
             btn.grid(row=row, column=col, padx=8, pady=6)
             self.quick_pick_buttons.append(btn)
 
+        start_text, start_icon = self._button_label("Начать игру", "play2.0", (28, 32), TEXT_PRIMARY)
         self._make_button(
             body,
-            "Начать игру",
+            start_text,
             command=self.start_interactive_game,
             fg_color=GREEN,
             hover_color=GREEN_HOVER,
@@ -382,17 +484,20 @@ class PrisonersApp(ctk.CTk):
             height=66,
             font_size=24,
             bold=True,
+            image=start_icon,
         ).pack(pady=(2, 10))
 
+        back_text, back_icon = self._button_label("Назад", "back", (22, 14), TEXT_PRIMARY)
         self._make_button(
             body,
-            "Назад",
+            back_text,
             command=self.show_main_menu,
             fg_color=RED,
             hover_color=RED_HOVER,
             width=315,
             height=40,
             font_size=18,
+            image=back_icon,
         ).pack()
 
         self.status_label = ctk.CTkLabel(
@@ -422,9 +527,10 @@ class PrisonersApp(ctk.CTk):
         top_row = ctk.CTkFrame(header, fg_color="transparent")
         top_row.pack(fill="x", padx=12, pady=(10, 0))
 
+        back_text, back_icon = self._button_label("Назад", "back", (22, 14), TEXT_PRIMARY)
         self._make_button(
             top_row,
-            "<-  Назад",
+            back_text,
             command=self.show_main_menu,
             fg_color=RED,
             hover_color=RED_HOVER,
@@ -432,18 +538,21 @@ class PrisonersApp(ctk.CTk):
             height=28,
             font_size=12,
             corner_radius=8,
+            image=back_icon,
         ).pack(side="left")
 
+        export_text, export_icon = self._button_label("Экспорт данных", "export", (16, 20), TEXT_PRIMARY)
         self._make_button(
             top_row,
-            "Экспорт данных",
-            command=lambda: self._set_status("Экспорт данных пока не реализован.", TEXT_MUTED),
+            export_text,
+            command=self.show_export_page,
             fg_color=BLUE,
             hover_color=BLUE_HOVER,
             width=132,
             height=28,
             font_size=12,
             corner_radius=8,
+            image=export_icon,
         ).pack(side="right")
 
         ctk.CTkLabel(
@@ -476,13 +585,27 @@ class PrisonersApp(ctk.CTk):
         def _kpi_card(col: int, title: str, key: str, color: str) -> None:
             card = self._make_panel(kpi_row, fg_color=color, corner_radius=10, border_width=1, border_color=color)
             card.grid(row=0, column=col, padx=5, sticky="nsew")
+            icon_map = {
+                "games": "whole_games",
+                "win_rate": "stats_win_percentage",
+                "wins": "win_stats",
+                "losses": "lost_stats",
+            }
+            self._make_icon_label(
+                card,
+                icon_name=icon_map[key],
+                size=(30, 26) if key == "games" else (34, 20) if key == "win_rate" else (22, 24) if key == "wins" else (30, 30),
+                color="#0077ff" if key == "games" else "#48d06c" if key == "win_rate" else TEXT_PRIMARY if key == "wins" else "#ff5353",
+                fallback_text="",
+                fg_color="transparent",
+            ).pack(pady=(12, 2))
             value_label = ctk.CTkLabel(
                 card,
                 text="0",
                 font=self._number_font(28, bold=True),
                 text_color=TEXT_PRIMARY,
             )
-            value_label.pack(pady=(14, 2))
+            value_label.pack(pady=(2, 2))
             ctk.CTkLabel(
                 card,
                 text=title,
@@ -560,7 +683,18 @@ class PrisonersApp(ctk.CTk):
 
             head = ctk.CTkFrame(card, fg_color="transparent")
             head.pack(fill="x", padx=14, pady=(10, 8))
-            self._make_people_badge(head)
+            users_icon = self._get_icon("stats_prisoner_number", (58, 48), "#eef2ff")
+            if users_icon is not None:
+                ctk.CTkLabel(
+                    head,
+                    text="",
+                    image=users_icon,
+                    fg_color="transparent",
+                    width=58,
+                    height=48,
+                ).pack(side="left")
+            else:
+                self._make_people_badge(head)
 
             title_wrap = ctk.CTkFrame(head, fg_color="transparent")
             title_wrap.pack(side="left", padx=10)
@@ -643,6 +777,168 @@ class PrisonersApp(ctk.CTk):
 
         self.run_stats()
 
+    def show_export_page(self) -> None:
+        self.clear_container()
+
+        shell = self._make_panel(self.container, fg_color=SURFACE_COLOR, corner_radius=18)
+        shell.place(relx=0.5, rely=0.5, anchor="center")
+
+        body = ctk.CTkFrame(shell, fg_color="transparent")
+        body.pack(padx=90, pady=58)
+
+        title_pill = ctk.CTkFrame(body, fg_color="#6d9786", corner_radius=20)
+        title_pill.pack(pady=(0, 42))
+
+        export_icon = self._icon_only("export", (18, 22), TEXT_PRIMARY)
+        title_row = ctk.CTkFrame(title_pill, fg_color="transparent")
+        title_row.pack(padx=26, pady=10)
+        if export_icon is not None:
+            ctk.CTkLabel(
+                title_row,
+                text="",
+                image=export_icon,
+                fg_color="transparent",
+            ).pack(side="left", padx=(0, 14))
+        ctk.CTkLabel(
+            title_row,
+            text="Экспорт данных",
+            font=self._text_font(28, bold=True),
+            text_color="#b8ff84",
+        ).pack(side="left")
+
+        center_card = ctk.CTkFrame(body, fg_color="#1f5637", corner_radius=14, width=370, height=480)
+        center_card.pack()
+        center_card.pack_propagate(False)
+
+        buttons_wrap = ctk.CTkFrame(center_card, fg_color="transparent")
+        buttons_wrap.pack(fill="x", padx=20, pady=46)
+
+        export_buttons = [
+            ("XLSX", "#29a643", "#238f39", "xlsx"),
+            ("PDF", "#b3473d", "#9d3e36", "pdf"),
+            ("CSV", "#3a834e", "#327245", "csv"),
+            ("XML", "#b18120", "#9d711b", "xml"),
+            ("JSON", "#1f7fbc", "#1a6c9f", "json"),
+        ]
+        for text, fg, hover, fmt in export_buttons:
+            self._make_button(
+                buttons_wrap,
+                text,
+                command=lambda f=fmt: self._export_stats(f),
+                fg_color=fg,
+                hover_color=hover,
+                width=330,
+                height=56,
+                font_size=26,
+                bold=True,
+                text_color="#0a0f0d" if fmt != "pdf" else TEXT_PRIMARY,
+            ).pack(pady=8)
+
+        self.export_status_label = ctk.CTkLabel(
+            body,
+            text="",
+            font=self._text_font(14, bold=True),
+            text_color=TEXT_MUTED,
+            justify="center",
+        )
+        self.export_status_label.pack(pady=(18, 8))
+
+        bottom_row = ctk.CTkFrame(body, fg_color="transparent")
+        bottom_row.pack(fill="x", pady=(8, 0))
+        self._make_button(
+            bottom_row,
+            "Назад",
+            command=self.show_stats_page,
+            fg_color=RED,
+            hover_color=RED_HOVER,
+            width=140,
+            height=38,
+            font_size=18,
+            image=self._icon_only("back", (22, 14), TEXT_PRIMARY),
+        ).pack()
+
+    def _set_export_status(self, text: str, color: str = TEXT_MUTED) -> None:
+        if self.export_status_label:
+            self.export_status_label.configure(text=text, text_color=color)
+
+    def _build_export_payload(self) -> Dict[str, object]:
+        total_summary = self.stats_store.total_summary()
+        details: Dict[str, Dict[str, float]] = {}
+        for n_value in sorted(set([10, 25, 50, 100] + self.stats_detail_ns)):
+            details[str(n_value)] = self.stats_store.summary_for_n(n_value)
+        return {
+            "summary": total_summary,
+            "by_prisoners": details,
+        }
+
+    def _export_stats(self, fmt: str) -> None:
+        EXPORTS_DIR.mkdir(parents=True, exist_ok=True)
+        payload = self._build_export_payload()
+
+        try:
+            if fmt == "json":
+                target = EXPORTS_DIR / "prisoners_stats_export.json"
+                target.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+            elif fmt == "csv":
+                target = EXPORTS_DIR / "prisoners_stats_export.csv"
+                with target.open("w", encoding="utf-8", newline="") as fh:
+                    writer = DictWriter(
+                        fh,
+                        fieldnames=[
+                            "scope",
+                            "prisoners",
+                            "games",
+                            "wins",
+                            "losses",
+                            "saved_prisoners",
+                            "lost_prisoners",
+                            "win_rate",
+                        ],
+                    )
+                    writer.writeheader()
+                    summary = payload["summary"]
+                    writer.writerow(
+                        {
+                            "scope": "summary",
+                            "prisoners": "all",
+                            **summary,
+                        }
+                    )
+                    for n_key, stats in payload["by_prisoners"].items():
+                        writer.writerow(
+                            {
+                                "scope": "by_prisoners",
+                                "prisoners": n_key,
+                                **stats,
+                            }
+                        )
+            elif fmt == "xml":
+                target = EXPORTS_DIR / "prisoners_stats_export.xml"
+                root = ET.Element("stats")
+                summary_node = ET.SubElement(root, "summary")
+                for key, value in payload["summary"].items():
+                    ET.SubElement(summary_node, key).text = str(value)
+                by_prisoners_node = ET.SubElement(root, "by_prisoners")
+                for n_key, stats in payload["by_prisoners"].items():
+                    item_node = ET.SubElement(by_prisoners_node, "group", prisoners=n_key)
+                    for key, value in stats.items():
+                        ET.SubElement(item_node, key).text = str(value)
+                ET.ElementTree(root).write(target, encoding="utf-8", xml_declaration=True)
+            elif fmt == "xlsx":
+                self._set_export_status("XLSX пока не реализован. Сейчас доступны JSON, CSV и XML.", "#ffd1a8")
+                return
+            elif fmt == "pdf":
+                self._set_export_status("PDF пока не реализован. Сейчас доступны JSON, CSV и XML.", "#ffd1a8")
+                return
+            else:
+                self._set_export_status("Неизвестный формат экспорта.", "#ffb0b0")
+                return
+        except Exception as exc:
+            self._set_export_status(f"Ошибка экспорта: {exc}", "#ffb0b0")
+            return
+
+        self._set_export_status(f"Файл сохранен: {target.name}", "#b8ff84")
+
     def _parse_positive_int(self, text: str) -> Optional[int]:
         value = text.strip()
         if not value.isdigit():
@@ -702,8 +998,10 @@ class PrisonersApp(ctk.CTk):
         self.boxes = generate_boxes(self.total_cells)
         self.cell_buttons = []
         self.game_mode = "manual"
+        self.timer_started_at = None
 
         self._show_gameplay_screen()
+        self._start_timer()
         self._start_round()
 
     def _show_gameplay_screen(self) -> None:
@@ -715,9 +1013,10 @@ class PrisonersApp(ctk.CTk):
         header_top = ctk.CTkFrame(self.game_header, fg_color="transparent")
         header_top.pack(fill="x", padx=10, pady=(10, 8))
 
+        back_text, back_icon = self._button_label("Назад", "back", (20, 12), TEXT_PRIMARY)
         self._make_button(
             header_top,
-            "<-  Назад",
+            back_text,
             command=self.show_game_setup,
             fg_color=RED,
             hover_color=RED_HOVER,
@@ -725,26 +1024,31 @@ class PrisonersApp(ctk.CTk):
             height=26,
             font_size=11,
             corner_radius=8,
+            image=back_icon,
         ).pack(side="left")
 
         right_controls = ctk.CTkFrame(header_top, fg_color="transparent")
         right_controls.pack(side="right")
 
+        timer_icon = self._get_icon("timer", (14, 16), "#053047")
         self.game_attempts_value = ctk.CTkLabel(
             right_controls,
-            text="0 / 0",
+            text="0:00",
+            image=timer_icon,
             font=self._number_font(11),
             text_color=TEXT_PRIMARY,
             fg_color="#1ab8b0",
             corner_radius=8,
-            width=58,
+            width=68,
             height=24,
+            compound="left",
         )
         self.game_attempts_value.pack(side="left", padx=(0, 8))
 
+        new_text, new_icon = self._button_label("Новая игра", "restart", (18, 16), TEXT_PRIMARY)
         self._make_button(
             right_controls,
-            "Новая игра",
+            new_text,
             command=self.start_interactive_game,
             fg_color=GREEN,
             hover_color=GREEN_HOVER,
@@ -752,6 +1056,7 @@ class PrisonersApp(ctk.CTk):
             height=24,
             font_size=11,
             corner_radius=8,
+            image=new_icon,
         ).pack(side="left")
 
         info_row = ctk.CTkFrame(self.game_header, fg_color="transparent")
@@ -799,14 +1104,16 @@ class PrisonersApp(ctk.CTk):
         self.game_prisoner_card = self._make_panel(self.container, fg_color=PANEL_COLOR, corner_radius=10)
         self.game_prisoner_card.pack(fill="x", padx=8, pady=(0, 10))
 
+        avatar_icon = self._get_icon("prisoner_icon", (88, 108), TEXT_PRIMARY)
         ctk.CTkLabel(
             self.game_prisoner_card,
-            text="P",
+            text="P" if avatar_icon is None else "",
+            image=avatar_icon,
             font=self._text_font(46, bold=True),
             text_color="#ff9933",
-            width=120,
-            height=80,
-            fg_color="#304d5d",
+            width=110,
+            height=126,
+            fg_color="transparent",
             corner_radius=10,
         ).pack(pady=(18, 8))
 
@@ -846,6 +1153,37 @@ class PrisonersApp(ctk.CTk):
             except Exception:
                 pass
             self.auto_job = None
+
+    def _cancel_timer_job(self) -> None:
+        if self.timer_job is not None:
+            try:
+                self.after_cancel(self.timer_job)
+            except Exception:
+                pass
+            self.timer_job = None
+
+    def _format_elapsed_time(self) -> str:
+        if self.timer_started_at is None:
+            return "0:00"
+        elapsed = max(0, int(time.monotonic() - self.timer_started_at))
+        minutes, seconds = divmod(elapsed, 60)
+        return f"{minutes}:{seconds:02d}"
+
+    def _update_timer_label(self) -> None:
+        if self.game_attempts_value:
+            self.game_attempts_value.configure(text=self._format_elapsed_time())
+
+    def _tick_timer(self) -> None:
+        self.timer_job = None
+        self._update_timer_label()
+        if self.timer_started_at is not None:
+            self.timer_job = self.after(1000, self._tick_timer)
+
+    def _start_timer(self) -> None:
+        self._cancel_timer_job()
+        self.timer_started_at = time.monotonic()
+        self._update_timer_label()
+        self.timer_job = self.after(1000, self._tick_timer)
 
     def _prepare_auto_sequence(self) -> None:
         self.auto_step_index = 0
@@ -919,8 +1257,7 @@ class PrisonersApp(ctk.CTk):
                     f"Успехи: {self.successful_rounds} | Поражения: {self.failed_rounds}"
                 )
             )
-        if self.game_attempts_value:
-            self.game_attempts_value.configure(text=f"{self.opened_count:02d}")
+        self._update_timer_label()
 
     def render_game_board(self) -> None:
         if self.board_wrap is not None:
@@ -1089,9 +1426,10 @@ class PrisonersApp(ctk.CTk):
             justify="center",
         ).pack(pady=(0, 10))
 
+        new_text, new_icon = self._button_label("Новая игра", "restart", (18, 16), TEXT_PRIMARY)
         self._make_button(
             self.round_summary,
-            "Новая игра",
+            new_text,
             command=self.start_interactive_game,
             fg_color=GREEN,
             hover_color=GREEN_HOVER,
@@ -1099,6 +1437,7 @@ class PrisonersApp(ctk.CTk):
             height=40,
             font_size=15,
             bold=True,
+            image=new_icon,
         ).pack(pady=(0, 14))
 
     def _show_game_over_summary(self) -> None:
@@ -1133,9 +1472,10 @@ class PrisonersApp(ctk.CTk):
             justify="center",
         ).pack(pady=(0, 10))
 
+        new_text, new_icon = self._button_label("Новая игра", "restart", (18, 16), TEXT_PRIMARY)
         self._make_button(
             self.round_summary,
-            "Новая игра",
+            new_text,
             command=self.start_interactive_game,
             fg_color=GREEN,
             hover_color=GREEN_HOVER,
@@ -1143,6 +1483,7 @@ class PrisonersApp(ctk.CTk):
             height=40,
             font_size=15,
             bold=True,
+            image=new_icon,
         ).pack(pady=(0, 14))
 
     def run_stats(self) -> None:

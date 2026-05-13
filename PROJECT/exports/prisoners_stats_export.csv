@@ -1,0 +1,6 @@
+scope,prisoners,games,wins,losses,saved_prisoners,lost_prisoners,win_rate
+summary,all,36,2,34,42,971,5.555555555555555
+by_prisoners,10,23,2,21,25,205,8.695652173913043
+by_prisoners,25,2,0,2,0,50,0.0
+by_prisoners,50,0,0,0,0,0,0.0
+by_prisoners,100,5,0,5,15,485,0.0
