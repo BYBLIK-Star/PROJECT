@@ -87,7 +87,6 @@ class PrisonersApp(ctk.CTk):
         self.status_label: Optional[ctk.CTkLabel] = None
         self.counter_label: Optional[ctk.CTkLabel] = None
 
-        self.stats_cells_entry: Optional[ctk.CTkEntry] = None
         self.stats_kpi_labels: Dict[str, ctk.CTkLabel] = {}
         self.stats_n_cards: Dict[int, Dict[str, ctk.CTkLabel]] = {}
         self.stats_fact_label: Optional[ctk.CTkLabel] = None
@@ -583,7 +582,13 @@ class PrisonersApp(ctk.CTk):
         self.stats_kpi_labels = {}
 
         def _kpi_card(col: int, title: str, key: str, color: str) -> None:
-            card = self._make_panel(kpi_row, fg_color=color, corner_radius=10, border_width=1, border_color=color)
+            card_color = color
+            if key == "wins":
+                card_color = "#449D5D"
+            elif key == "losses":
+                card_color = "#8C4B43"
+
+            card = self._make_panel(kpi_row, fg_color=card_color, corner_radius=10, border_width=1, border_color=color)
             card.grid(row=0, column=col, padx=5, sticky="nsew")
             icon_map = {
                 "games": "whole_games",
@@ -591,33 +596,65 @@ class PrisonersApp(ctk.CTk):
                 "wins": "win_stats",
                 "losses": "lost_stats",
             }
-            self._make_icon_label(
-                card,
-                icon_name=icon_map[key],
-                size=(30, 26) if key == "games" else (34, 20) if key == "win_rate" else (22, 24) if key == "wins" else (30, 30),
-                color="#0077ff" if key == "games" else "#48d06c" if key == "win_rate" else TEXT_PRIMARY if key == "wins" else "#ff5353",
-                fallback_text="",
-                fg_color="transparent",
-            ).pack(pady=(12, 2))
-            value_label = ctk.CTkLabel(
-                card,
-                text="0",
-                font=self._number_font(28, bold=True),
-                text_color=TEXT_PRIMARY,
-            )
-            value_label.pack(pady=(2, 2))
-            ctk.CTkLabel(
-                card,
-                text=title,
-                font=self._text_font(14),
-                text_color=TEXT_MUTED,
-            ).pack(pady=(0, 12))
+            if key in {"wins", "losses"}:
+                content = ctk.CTkFrame(card, fg_color="transparent")
+                content.pack(fill="both", expand=True, padx=12, pady=(3, 0))
+
+                self._make_icon_label(
+                    content,
+                    icon_name=icon_map[key],
+                    size=(38, 38) if key == "losses" else (30, 32),
+                    color=color,
+                    fallback_text="",
+                    fg_color="transparent",
+                ).pack(side="left", padx=(0, 10))
+
+                text_wrap = ctk.CTkFrame(content, fg_color="transparent")
+                text_wrap.pack(side="left", fill="both", expand=True)
+                text_wrap.grid_columnconfigure(0, weight=1)
+
+                value_label = ctk.CTkLabel(
+                    text_wrap,
+                    text="0",
+                    font=self._number_font(34, bold=True),
+                    text_color=TEXT_PRIMARY,
+                )
+                value_label.pack(anchor="center", pady=(8, 0))
+                ctk.CTkLabel(
+                    text_wrap,
+                    text=title,
+                    font=self._text_font(14),
+                    text_color=TEXT_PRIMARY,
+                ).pack(anchor="center", pady=(0, 0))
+            else:
+                self._make_icon_label(
+                    card,
+                    icon_name=icon_map[key],
+                    size=(30, 26) if key == "games" else (34, 20),
+                    color="#0077ff" if key == "games" else "#48d06c",
+                    fallback_text="",
+                    fg_color="transparent",
+                ).pack(pady=(12, 2))
+
+                value_label = ctk.CTkLabel(
+                    card,
+                    text="0",
+                    font=self._number_font(28, bold=True),
+                    text_color=TEXT_PRIMARY,
+                )
+                value_label.pack(pady=(2, 2))
+                ctk.CTkLabel(
+                    card,
+                    text=title,
+                    font=self._text_font(14),
+                    text_color=TEXT_MUTED,
+                ).pack(pady=(0, 12))
             self.stats_kpi_labels[key] = value_label
 
         _kpi_card(0, "Всего игр", "games", "#2b584b")
         _kpi_card(1, "Процент побед", "win_rate", "#396856")
-        _kpi_card(2, "Побед", "wins", "#46a85a")
-        _kpi_card(3, "Поражений", "losses", "#8b5b52")
+        _kpi_card(2, "Побед", "wins", "#34C759")
+        _kpi_card(3, "Поражений", "losses", "#FF0000")
 
         ctk.CTkLabel(
             page,
@@ -626,32 +663,12 @@ class PrisonersApp(ctk.CTk):
             text_color=TEXT_PRIMARY,
         ).pack(anchor="w", padx=160, pady=(12, 18))
 
-        controls = ctk.CTkFrame(page, fg_color="transparent")
-        controls.pack(anchor="w", padx=160, pady=(0, 14))
-
-        self.stats_cells_entry = ctk.CTkEntry(
-            controls,
-            width=120,
-            height=34,
-            font=self._number_font(16),
-            fg_color="#547d72",
-            border_color="#91a89c",
-            text_color=TEXT_PRIMARY,
-        )
-        self.stats_cells_entry.pack(side="left", padx=(0, 8))
-        self.stats_cells_entry.insert(0, str(DEFAULT_CELLS))
-
-        self._make_button(
-            controls,
-            "Обновить",
-            command=self.run_stats,
-            fg_color=BLUE,
-            hover_color=BLUE_HOVER,
-            width=120,
-            height=34,
-            font_size=14,
-            corner_radius=8,
-        ).pack(side="left")
+        ctk.CTkLabel(
+            page,
+            text="Ниже показана общая статистика для двух последних запусков.",
+            font=self._text_font(13),
+            text_color=TEXT_MUTED,
+        ).pack(anchor="w", padx=160, pady=(0, 14))
 
         details_row = ctk.CTkFrame(page, fg_color="transparent")
         details_row.pack(fill="x", padx=135, pady=(0, 20))
@@ -1487,16 +1504,25 @@ class PrisonersApp(ctk.CTk):
         ).pack(pady=(0, 14))
 
     def run_stats(self) -> None:
-        if not self.stats_cells_entry:
-            return
+        card_limit = len(self.stats_n_cards)
+        recent_counts = self.stats_store.recent_prisoner_counts(limit=card_limit)
+        for n_value in self.stats_store.available_prisoner_counts(limit=card_limit * 3):
+            if n_value not in recent_counts:
+                recent_counts.append(n_value)
+            if len(recent_counts) >= card_limit:
+                break
 
-        n = self._parse_positive_int(self.stats_cells_entry.get())
-        if n is None:
-            self._set_status("Количество заключенных должно быть целым числом больше 1.", "#ffb0b0")
-            return
+        for default_n in [100, 10, 25, 50]:
+            if default_n not in recent_counts:
+                recent_counts.append(default_n)
+            if len(recent_counts) >= card_limit:
+                break
 
-        self.stats_detail_ns = [n, 100]
-        self._set_status("Показаны сохраненные результаты игр.", TEXT_MUTED)
+        self.stats_detail_ns = recent_counts[:card_limit]
+        if self.stats_detail_ns:
+            self._set_status("Показана общая статистика по двум последним количествам заключенных.", TEXT_MUTED)
+        else:
+            self._set_status("Сохраненных игр пока нет.", TEXT_MUTED)
         total_summary = self.stats_store.total_summary()
 
         if self.stats_kpi_labels:
