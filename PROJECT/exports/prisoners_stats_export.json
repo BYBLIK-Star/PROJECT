@@ -1,11 +1,11 @@
 {
   "summary": {
-    "games": 36,
+    "games": 37,
     "wins": 2,
-    "losses": 34,
+    "losses": 35,
     "saved_prisoners": 42,
-    "lost_prisoners": 971,
-    "win_rate": 5.555555555555555
+    "lost_prisoners": 1121,
+    "win_rate": 5.405405405405405
   },
   "by_prisoners": {
     "10": {
@@ -38,6 +38,14 @@
       "losses": 5,
       "saved_prisoners": 15,
       "lost_prisoners": 485,
+      "win_rate": 0.0
+    },
+    "150": {
+      "games": 1,
+      "wins": 0,
+      "losses": 1,
+      "saved_prisoners": 0,
+      "lost_prisoners": 150,
       "win_rate": 0.0
     }
   }

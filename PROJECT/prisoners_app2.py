@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 from typing import Dict, List, Optional
 import xml.etree.ElementTree as ET
+from zipfile import ZIP_DEFLATED, ZipFile
 
 import customtkinter as ctk
 
@@ -888,9 +889,233 @@ class PrisonersApp(ctk.CTk):
             "by_prisoners": details,
         }
 
+    def _build_export_rows(self, payload: Dict[str, object]) -> List[Dict[str, object]]:
+        rows: List[Dict[str, object]] = []
+        summary = payload["summary"]
+        rows.append(
+            {
+                "scope": "summary",
+                "prisoners": "all",
+                **summary,
+            }
+        )
+        for n_key, stats in payload["by_prisoners"].items():
+            rows.append(
+                {
+                    "scope": "by_prisoners",
+                    "prisoners": n_key,
+                    **stats,
+                }
+            )
+        return rows
+
+    def _export_stats_xlsx(self, target: Path, rows: List[Dict[str, object]]) -> None:
+        headers = [
+            "scope",
+            "prisoners",
+            "games",
+            "wins",
+            "losses",
+            "saved_prisoners",
+            "lost_prisoners",
+            "win_rate",
+        ]
+
+        def col_name(index: int) -> str:
+            name = ""
+            value = index
+            while value > 0:
+                value, remainder = divmod(value - 1, 26)
+                name = chr(65 + remainder) + name
+            return name
+
+        def xml_escape(value: object) -> str:
+            text = str(value)
+            return (
+                text.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace('"', "&quot;")
+            )
+
+        worksheet_rows: List[str] = []
+        all_rows = [headers] + [[row.get(header, "") for header in headers] for row in rows]
+        for row_index, row_values in enumerate(all_rows, start=1):
+            cells: List[str] = []
+            for col_index, value in enumerate(row_values, start=1):
+                cell_ref = f"{col_name(col_index)}{row_index}"
+                if isinstance(value, (int, float)) and not isinstance(value, bool):
+                    cells.append(f'<c r="{cell_ref}"><v>{value}</v></c>')
+                else:
+                    cells.append(
+                        f'<c r="{cell_ref}" t="inlineStr"><is><t>{xml_escape(value)}</t></is></c>'
+                    )
+            worksheet_rows.append(f"<row r=\"{row_index}\">{''.join(cells)}</row>")
+
+        worksheet_xml = (
+            "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"
+            "<worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\">"
+            "<sheetData>"
+            f"{''.join(worksheet_rows)}"
+            "</sheetData>"
+            "</worksheet>"
+        )
+
+        workbook_xml = (
+            "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"
+            "<workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" "
+            "xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\">"
+            "<sheets>"
+            "<sheet name=\"Stats\" sheetId=\"1\" r:id=\"rId1\"/>"
+            "</sheets>"
+            "</workbook>"
+        )
+
+        workbook_rels_xml = (
+            "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"
+            "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">"
+            "<Relationship Id=\"rId1\" "
+            "Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet\" "
+            "Target=\"worksheets/sheet1.xml\"/>"
+            "<Relationship Id=\"rId2\" "
+            "Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles\" "
+            "Target=\"styles.xml\"/>"
+            "</Relationships>"
+        )
+
+        package_rels_xml = (
+            "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"
+            "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">"
+            "<Relationship Id=\"rId1\" "
+            "Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument\" "
+            "Target=\"xl/workbook.xml\"/>"
+            "</Relationships>"
+        )
+
+        content_types_xml = (
+            "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"
+            "<Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\">"
+            "<Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/>"
+            "<Default Extension=\"xml\" ContentType=\"application/xml\"/>"
+            "<Override PartName=\"/xl/workbook.xml\" "
+            "ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml\"/>"
+            "<Override PartName=\"/xl/worksheets/sheet1.xml\" "
+            "ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml\"/>"
+            "<Override PartName=\"/xl/styles.xml\" "
+            "ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml\"/>"
+            "</Types>"
+        )
+
+        styles_xml = (
+            "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"
+            "<styleSheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\">"
+            "<fonts count=\"1\"><font><sz val=\"11\"/><name val=\"Calibri\"/></font></fonts>"
+            "<fills count=\"1\"><fill><patternFill patternType=\"none\"/></fill></fills>"
+            "<borders count=\"1\"><border><left/><right/><top/><bottom/><diagonal/></border></borders>"
+            "<cellStyleXfs count=\"1\"><xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\"/></cellStyleXfs>"
+            "<cellXfs count=\"1\"><xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\"/></cellXfs>"
+            "<cellStyles count=\"1\"><cellStyle name=\"Normal\" xfId=\"0\" builtinId=\"0\"/></cellStyles>"
+            "</styleSheet>"
+        )
+
+        with ZipFile(target, "w", compression=ZIP_DEFLATED) as archive:
+            archive.writestr("[Content_Types].xml", content_types_xml)
+            archive.writestr("_rels/.rels", package_rels_xml)
+            archive.writestr("xl/workbook.xml", workbook_xml)
+            archive.writestr("xl/_rels/workbook.xml.rels", workbook_rels_xml)
+            archive.writestr("xl/worksheets/sheet1.xml", worksheet_xml)
+            archive.writestr("xl/styles.xml", styles_xml)
+
+    def _export_stats_pdf(self, target: Path, rows: List[Dict[str, object]]) -> None:
+        def pdf_escape(value: object) -> str:
+            return str(value).replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+
+        lines = [
+            "Prisoners Stats Export",
+            "",
+            "Summary:",
+        ]
+        summary_row = rows[0] if rows else {}
+        lines.extend(
+            [
+                f"Games: {summary_row.get('games', 0)}",
+                f"Wins: {summary_row.get('wins', 0)}",
+                f"Losses: {summary_row.get('losses', 0)}",
+                f"Saved prisoners: {summary_row.get('saved_prisoners', 0)}",
+                f"Lost prisoners: {summary_row.get('lost_prisoners', 0)}",
+                f"Win rate: {summary_row.get('win_rate', 0):.1f}%",
+                "",
+                "By prisoners:",
+            ]
+        )
+
+        for row in rows[1:]:
+            lines.append(
+                f"N={row.get('prisoners')} | games={row.get('games')} | wins={row.get('wins')} | "
+                f"losses={row.get('losses')} | saved={row.get('saved_prisoners')} | "
+                f"lost={row.get('lost_prisoners')} | win rate={float(row.get('win_rate', 0)):.1f}%"
+            )
+
+        max_lines_per_page = 40
+        pages = [lines[i:i + max_lines_per_page] for i in range(0, len(lines), max_lines_per_page)] or [[]]
+
+        font_id = 1
+        content_ids = [2 + index * 2 for index in range(len(pages))]
+        page_ids = [content_id + 1 for content_id in content_ids]
+        pages_id = 2 + len(pages) * 2
+        catalog_id = pages_id + 1
+
+        objects: List[bytes] = [b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"]
+        for page_index, page_lines in enumerate(pages):
+            text_lines = ["BT", "/F1 12 Tf", "50 790 Td", "14 TL"]
+            first_text = True
+            for line in page_lines:
+                operator = "Tj" if first_text else "'"
+                text_lines.append(f"({pdf_escape(line)}) {operator}")
+                first_text = False
+            text_lines.append("ET")
+            stream = "\n".join(text_lines).encode("latin-1")
+            objects.append(
+                b"<< /Length " + str(len(stream)).encode("ascii") + b" >>\nstream\n" + stream + b"\nendstream"
+            )
+            objects.append(
+                (
+                    f"<< /Type /Page /Parent {pages_id} 0 R "
+                    f"/MediaBox [0 0 595 842] "
+                    f"/Resources << /Font << /F1 {font_id} 0 R >> >> "
+                    f"/Contents {content_ids[page_index]} 0 R >>"
+                ).encode("ascii")
+            )
+
+        kids = " ".join(f"{page_id} 0 R" for page_id in page_ids)
+        objects.append(f"<< /Type /Pages /Kids [{kids}] /Count {len(page_ids)} >>".encode("ascii"))
+        objects.append(f"<< /Type /Catalog /Pages {pages_id} 0 R >>".encode("ascii"))
+
+        pdf = bytearray(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
+        offsets = [0]
+        for index, obj in enumerate(objects, start=1):
+            offsets.append(len(pdf))
+            pdf.extend(f"{index} 0 obj\n".encode("ascii"))
+            pdf.extend(obj)
+            pdf.extend(b"\nendobj\n")
+
+        xref_offset = len(pdf)
+        pdf.extend(f"xref\n0 {len(objects) + 1}\n".encode("ascii"))
+        pdf.extend(b"0000000000 65535 f \n")
+        for offset in offsets[1:]:
+            pdf.extend(f"{offset:010d} 00000 n \n".encode("ascii"))
+        pdf.extend(
+            (
+                f"trailer\n<< /Size {len(objects) + 1} /Root {catalog_id} 0 R >>\n"
+                f"startxref\n{xref_offset}\n%%EOF"
+            ).encode("ascii")
+        )
+        target.write_bytes(pdf)
+
     def _export_stats(self, fmt: str) -> None:
         EXPORTS_DIR.mkdir(parents=True, exist_ok=True)
         payload = self._build_export_payload()
+        rows = self._build_export_rows(payload)
 
         try:
             if fmt == "json":
@@ -913,22 +1138,8 @@ class PrisonersApp(ctk.CTk):
                         ],
                     )
                     writer.writeheader()
-                    summary = payload["summary"]
-                    writer.writerow(
-                        {
-                            "scope": "summary",
-                            "prisoners": "all",
-                            **summary,
-                        }
-                    )
-                    for n_key, stats in payload["by_prisoners"].items():
-                        writer.writerow(
-                            {
-                                "scope": "by_prisoners",
-                                "prisoners": n_key,
-                                **stats,
-                            }
-                        )
+                    for row in rows:
+                        writer.writerow(row)
             elif fmt == "xml":
                 target = EXPORTS_DIR / "prisoners_stats_export.xml"
                 root = ET.Element("stats")
@@ -942,11 +1153,11 @@ class PrisonersApp(ctk.CTk):
                         ET.SubElement(item_node, key).text = str(value)
                 ET.ElementTree(root).write(target, encoding="utf-8", xml_declaration=True)
             elif fmt == "xlsx":
-                self._set_export_status("XLSX пока не реализован. Сейчас доступны JSON, CSV и XML.", "#ffd1a8")
-                return
+                target = EXPORTS_DIR / "prisoners_stats_export.xlsx"
+                self._export_stats_xlsx(target, rows)
             elif fmt == "pdf":
-                self._set_export_status("PDF пока не реализован. Сейчас доступны JSON, CSV и XML.", "#ffd1a8")
-                return
+                target = EXPORTS_DIR / "prisoners_stats_export.pdf"
+                self._export_stats_pdf(target, rows)
             else:
                 self._set_export_status("Неизвестный формат экспорта.", "#ffb0b0")
                 return
