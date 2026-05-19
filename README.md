@@ -107,6 +107,8 @@ python PROJECT/prisoners_app2.py
 - `JSON`
 - `CSV`
 - `XML`
+- `PDF`
+- `XLSX`
 
 Файлы сохраняются в папку `PROJECT/exports/`.
 
