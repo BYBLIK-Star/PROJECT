@@ -57,6 +57,219 @@ TEXT_FONT_FAMILY = "Jacques Francois Shadow"
 NUMBER_FONT_FAMILY = "Abel"
 ASSETS_DIR = Path(__file__).with_name("assets") / "icons"
 EXPORTS_DIR = Path(__file__).with_name("exports")
+EXPORT_HEADERS = [
+    "scope",
+    "prisoners",
+    "games",
+    "wins",
+    "losses",
+    "saved_prisoners",
+    "lost_prisoners",
+    "win_rate",
+]
+DEFAULT_STATS_COUNTS = [10, 25, 50, 100]
+AUTO_MODES = {"cycle", "random"}
+LANGUAGE_OPTIONS = [("en", "English"), ("ru", "Russian"), ("ky", "Kyrgyz")]
+TRANSLATIONS = {
+    "en": {
+        "window_title": "100 prisoners",
+        "main_title": "100 prisoners",
+        "play": "Play",
+        "statistics": "Statistics",
+        "exit": "Exit",
+        "main_subtitle": "Classic logic puzzle\nFind your number among 100 boxes",
+        "game_setup": "Game settings",
+        "prisoners_count": "Number of prisoners:",
+        "enter_number": "Enter a number (from 2 to 1000):",
+        "attempts_per_person": "Attempts per person: {attempts}",
+        "quick_selection": "Quick selection:",
+        "start_game": "Start game",
+        "back": "Back",
+        "export_data": "Export data",
+        "overall_statistics": "Overall statistics",
+        "stats_by_prisoners": "Statistics by number of prisoners",
+        "stats_recent_info": "Below is the overall statistics for the two most recent prisoner counts.",
+        "total_games": "Total games",
+        "win_percentage": "Win percentage",
+        "wins": "Wins",
+        "losses": "Losses",
+        "games": "Games",
+        "total": "Total",
+        "prisoners": "Prisoners",
+        "found": "Found",
+        "lost": "Lost",
+        "prisoners_n": "{count} prisoners",
+        "attempts_short": "Attempts: {attempts}",
+        "success_rate": "{rate:.1f}% success rate",
+        "interesting_fact": "Interesting fact:\nUsing the \"follow the cycle\" strategy, the success probability of all 100 prisoners is about {cycle:.0f}%, which is much higher than the random {random:.30f}%.",
+        "shown_recent_stats": "Showing overall statistics for the two most recent prisoner counts.",
+        "no_saved_games": "No saved games yet.",
+        "unknown_export_format": "Unknown export format.",
+        "export_error": "Export error: {error}",
+        "file_saved": "File saved: {name}",
+        "invalid_n": "Enter a valid N (from 2 to 1000).",
+        "max_n": "Maximum N: 1000.",
+        "save_stats_failed": "Could not save statistics to disk.",
+        "new_game": "New game",
+        "each": "Each",
+        "cycle": "Cycle",
+        "random": "Randomly",
+        "prisoner_badge": "Prisoner #{number}",
+        "status_round": "Prisoner: {current} / {total}\nAttempts left: {attempts}",
+        "counter": "Opened: {opened}/{max_open} | Wins: {wins} | Losses: {losses}",
+        "rules_title": "Game rules:",
+        "rules_body": "  * Each prisoner must find their number in 100 boxes\n  * Each prisoner has 50 attempts\n  * If at least one prisoner does not find their number, everyone loses\n  * The \"Cycle\" strategy gives about a 31% chance of winning for all prisoners",
+        "status_found": "Prisoner: {current} / {total}\nNumber found. Moving to the next one.",
+        "status_not_found": "Prisoner: {current} / {total}\nNumber not found. Game over.",
+        "status_series_done": "Prisoner: {total} / {total}\nSeries complete. Wins: {wins}, losses: {losses}.",
+        "series_done_title": "Prisoner series completed",
+        "series_done_summary": "Found their number: {wins}\nDid not find their number: {losses}",
+        "game_over_title": "Game over: number not found in {attempts} attempts",
+        "game_over_summary": "Successfully completed prisoners: {wins}\nFailed on prisoner: #{prisoner}",
+        "export_pdf_title": "Prisoners Stats Export",
+        "export_pdf_summary": "Summary:",
+        "export_pdf_games": "Games: {value}",
+        "export_pdf_wins": "Wins: {value}",
+        "export_pdf_losses": "Losses: {value}",
+        "export_pdf_saved": "Saved prisoners: {value}",
+        "export_pdf_lost": "Lost prisoners: {value}",
+        "export_pdf_win_rate": "Win rate: {value:.1f}%",
+        "export_pdf_by_prisoners": "By prisoners:",
+        "export_pdf_line": "N={prisoners} | games={games} | wins={wins} | losses={losses} | saved={saved} | lost={lost} | win rate={rate:.1f}%",
+    },
+    "ru": {
+        "window_title": "100 заключенных",
+        "main_title": "100 заключенных",
+        "play": "Играть",
+        "statistics": "Статистика",
+        "exit": "Выйти",
+        "main_subtitle": "Классическая логическая задача\nНайдите свой номер среди 100 ящиков",
+        "game_setup": "Настройка игры",
+        "prisoners_count": "Количество заключенных:",
+        "enter_number": "Введите число (от 2 до 1000):",
+        "attempts_per_person": "Попыток на каждого: {attempts}",
+        "quick_selection": "Быстрый выбор:",
+        "start_game": "Начать игру",
+        "back": "Назад",
+        "export_data": "Экспорт данных",
+        "overall_statistics": "Общая статистика",
+        "stats_by_prisoners": "Статистика по количеству заключенных",
+        "stats_recent_info": "Ниже показана общая статистика для двух последних запусков.",
+        "total_games": "Всего игр",
+        "win_percentage": "Процент побед",
+        "wins": "Побед",
+        "losses": "Поражений",
+        "games": "Игры",
+        "total": "Всего",
+        "prisoners": "Заключенные",
+        "found": "Нашли",
+        "lost": "Проиграли",
+        "prisoners_n": "{count} заключенных",
+        "attempts_short": "Попыток: {attempts}",
+        "success_rate": "{rate:.1f}% успешность",
+        "interesting_fact": "Интересный факт:\nПри использовании стратегии \"следования по циклу\" вероятность успеха всех 100 заключенных составляет около {cycle:.0f}%, что намного выше случайных {random:.30f}%.",
+        "shown_recent_stats": "Показана общая статистика по двум последним количествам заключенных.",
+        "no_saved_games": "Сохраненных игр пока нет.",
+        "unknown_export_format": "Неизвестный формат экспорта.",
+        "export_error": "Ошибка экспорта: {error}",
+        "file_saved": "Файл сохранен: {name}",
+        "invalid_n": "Введите корректное N (от 2 до 1000).",
+        "max_n": "Максимальное N: 1000.",
+        "save_stats_failed": "Не удалось сохранить статистику на диск.",
+        "new_game": "Новая игра",
+        "each": "Каждый",
+        "cycle": "Цикл",
+        "random": "Случайно",
+        "prisoner_badge": "Заключенный #{number}",
+        "status_round": "Заключенный: {current} / {total}\nПопыток осталось: {attempts}",
+        "counter": "Открыто: {opened}/{max_open} | Успехи: {wins} | Поражения: {losses}",
+        "rules_title": "Правила игры:",
+        "rules_body": "  * Каждый заключенный должен найти свой номер в 100 ящиках\n  * У каждого заключенного есть 50 попыток\n  * Если хотя бы один заключенный не найдет свой номер - все проигрывают\n  * Стратегия \"ЦИКЛ\" дает около 31% шанса на победу для всех заключенных",
+        "status_found": "Заключенный: {current} / {total}\nНомер найден. Переход к следующему.",
+        "status_not_found": "Заключенный: {current} / {total}\nНомер не найден. Игра завершена.",
+        "status_series_done": "Заключенный: {total} / {total}\nСерия завершена. Успехов: {wins}, поражений: {losses}.",
+        "series_done_title": "Серия заключенных пройдена",
+        "series_done_summary": "Успешно нашли номер: {wins}\nНе нашли номер: {losses}",
+        "game_over_title": "Игра завершена: номер не найден за {attempts} попыток",
+        "game_over_summary": "Успешно пройдено заключенных: {wins}\nПровал на заключенном: #{prisoner}",
+        "export_pdf_title": "Prisoners Stats Export",
+        "export_pdf_summary": "Summary:",
+        "export_pdf_games": "Games: {value}",
+        "export_pdf_wins": "Wins: {value}",
+        "export_pdf_losses": "Losses: {value}",
+        "export_pdf_saved": "Saved prisoners: {value}",
+        "export_pdf_lost": "Lost prisoners: {value}",
+        "export_pdf_win_rate": "Win rate: {value:.1f}%",
+        "export_pdf_by_prisoners": "By prisoners:",
+        "export_pdf_line": "N={prisoners} | games={games} | wins={wins} | losses={losses} | saved={saved} | lost={lost} | win rate={rate:.1f}%",
+    },
+    "ky": {
+        "window_title": "100 туткун",
+        "main_title": "100 туткун",
+        "play": "Оюн",
+        "statistics": "Статистика",
+        "exit": "Чыгуу",
+        "main_subtitle": "Классикалык логикалык табышмак\n100 кутучанын арасынан өз номериңди тап",
+        "game_setup": "Оюнду жөндөө",
+        "prisoners_count": "Түрмөгө камалгандардын саны:",
+        "enter_number": "Санды киргизиңиз (2 ден 1000 ге чейин):",
+        "attempts_per_person": "Ар бирине аракеттер: {attempts}",
+        "quick_selection": "Ылдам тандоо:",
+        "start_game": "Оюнду баштоо",
+        "back": "Артка",
+        "export_data": "Маалыматтарды экспорттоо",
+        "overall_statistics": "Жалпы статистика",
+        "stats_by_prisoners": "Камактагы адамдардын статистикасы",
+        "stats_recent_info": "Төмөндө акыркы эки түрмө саны боюнча жалпы статистика көрсөтүлөт.",
+        "total_games": "Бардык оюндар",
+        "win_percentage": "Жеңиш пайызы",
+        "wins": "Жеңиштер",
+        "losses": "Жеңилүүлөр",
+        "games": "Оюндар",
+        "total": "Бардык",
+        "prisoners": "Камактагы адамдар",
+        "found": "Тапты",
+        "lost": "Жоготту",
+        "prisoners_n": "{count} камактагы адам",
+        "attempts_short": "Таркет: {attempts}",
+        "success_rate": "{rate:.1f}% ийгиликтүүлүк",
+        "interesting_fact": "Кызыктуу факт:\n\"Цикл боюнча следование\" стратегиясын колдонгондо, 100 камактагы адамдын ийгилик мүмкүнчүлүгү болжол менен {cycle:.0f}% түзөт, бул кокустуктан {random:.30f}% кыйла жогору.",
+        "shown_recent_stats": "Акыркы эки түрмө саны боюнча жалпы статистика көрсөтүлдү.",
+        "no_saved_games": "Сакталган оюндар азырынча жок.",
+        "unknown_export_format": "Экспорт форматы белгисиз.",
+        "export_error": "Экспорт катасы: {error}",
+        "file_saved": "Файл сакталды: {name}",
+        "invalid_n": "Туура N киргизиңиз (2 ден 1000 ге чейин).",
+        "max_n": "Максималдуу N: 1000.",
+        "save_stats_failed": "Статистиканы дискке сактоо мүмкүн болгон жок.",
+        "new_game": "Жаңы оюн",
+        "each": "Ар бир",
+        "cycle": "Цикл",
+        "random": "Кокусунан",
+        "prisoner_badge": "Түрмөдөгү #{number}",
+        "status_round": "Түрмөдөгү: {current} / {total}\nАракет калды: {attempts}",
+        "counter": "Ачылды: {opened}/{max_open} | Жеңиштер: {wins} | Жеңилүүлөр: {losses}",
+        "rules_title": "Оюндун эрежелери:",
+        "rules_body": "  * Ар бир түрмөдөгү адам 100 кутучадан өз номерин табышы керек\n  * Ар бир түрмөдөгү адамда 50 аракет бар\n  * Эгерде бир түрмөдөгү адам өз номерин таппаса - баары утулат\n  * \"Цикл\" стратегиясы бардык түрмөдөгү адамдар үчүн ~31% жеңиш мүмкүнчүлүгүн берет",
+        "status_found": "Түрмөдөгү: {current} / {total}\nНомер табылды. Кийинкисине өтүү.",
+        "status_not_found": "Түрмөдөгү: {current} / {total}\nНомер табылган жок. Оюн аяктады.",
+        "status_series_done": "Түрмөдөгү: {total} / {total}\nСерия аяктады. Жеңиштер: {wins}, жеңилүүлөр: {losses}.",
+        "series_done_title": "Түрмөдөгүлөрдүн сериясы аяктады",
+        "series_done_summary": "Номерин тапкандар: {wins}\nТаппай калгандар: {losses}",
+        "game_over_title": "Оюн аяктады: номер {attempts} аракетте табылган жок",
+        "game_over_summary": "Ийгиликтүү өткөндөр: {wins}\nКата кеткен түрмөдөгү: #{prisoner}",
+        "export_pdf_title": "Prisoners Stats Export",
+        "export_pdf_summary": "Summary:",
+        "export_pdf_games": "Games: {value}",
+        "export_pdf_wins": "Wins: {value}",
+        "export_pdf_losses": "Losses: {value}",
+        "export_pdf_saved": "Saved prisoners: {value}",
+        "export_pdf_lost": "Lost prisoners: {value}",
+        "export_pdf_win_rate": "Win rate: {value:.1f}%",
+        "export_pdf_by_prisoners": "By prisoners:",
+        "export_pdf_line": "N={prisoners} | games={games} | wins={wins} | losses={losses} | saved={saved} | lost={lost} | win rate={rate:.1f}%",
+    },
+}
 
 
 class PrisonersApp(ctk.CTk):
@@ -66,7 +279,9 @@ class PrisonersApp(ctk.CTk):
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
 
-        self.title("100 заключенных")
+        self.language = "ru"
+        self.current_screen = "main_menu"
+        self.title(self.t("window_title"))
         self.geometry("1100x760")
         self.minsize(960, 700)
         self.configure(fg_color=BG_COLOR)
@@ -117,6 +332,44 @@ class PrisonersApp(ctk.CTk):
 
         self.show_main_menu()
 
+    def t(self, key: str, **kwargs) -> str:
+        text = TRANSLATIONS.get(self.language, TRANSLATIONS["ru"]).get(key, key)
+        return text.format(**kwargs) if kwargs else text
+
+    def set_language(self, language: str) -> None:
+        if language not in TRANSLATIONS or language == self.language:
+            return
+        self.language = language
+        self.title(self.t("window_title"))
+        if self.current_screen == "main_menu":
+            self.show_main_menu()
+        elif self.current_screen == "game_setup":
+            self.show_game_setup()
+        elif self.current_screen == "stats":
+            self.show_stats_page()
+        elif self.current_screen == "export":
+            self.show_export_page()
+
+    def _render_language_switcher(self, parent) -> None:
+        wrap = ctk.CTkFrame(parent, fg_color="#9a9a9a", corner_radius=6)
+        wrap.place(relx=0.955, rely=0.012, anchor="ne")
+
+        for idx, (code, label) in enumerate(LANGUAGE_OPTIONS):
+            is_active = code == self.language
+            self._make_button(
+                wrap,
+                label,
+                command=lambda lang=code: self.set_language(lang),
+                fg_color="#a7a7a7" if is_active else "#dddddd",
+                hover_color="#cfcfcf",
+                width=100,
+                height=23,
+                font_size=11,
+                corner_radius=4,
+                text_color="#111111",
+                bold=True,
+            ).pack(padx=1, pady=(1, 0) if idx == 0 else (0, 1))
+
     def clear_container(self) -> None:
         self._cancel_auto_job()
         self._cancel_timer_job()
@@ -141,7 +394,7 @@ class PrisonersApp(ctk.CTk):
             )
             self.stats_store.save()
         except Exception:
-            self._set_status("Не удалось сохранить статистику на диск.", "#ffb0b0")
+            self._set_status(self.t("save_stats_failed"), "#ffb0b0")
 
     def _make_panel(
         self,
@@ -302,7 +555,10 @@ class PrisonersApp(ctk.CTk):
         )
 
     def show_main_menu(self) -> None:
+        self.current_screen = "main_menu"
         self.clear_container()
+        self.title(self.t("window_title"))
+        self._render_language_switcher(self.container)
 
         card = self._make_panel(self.container, fg_color=SURFACE_COLOR, corner_radius=20)
         card.place(relx=0.5, rely=0.5, anchor="center")
@@ -312,12 +568,12 @@ class PrisonersApp(ctk.CTk):
 
         ctk.CTkLabel(
             content,
-            text="100 заключенных",
+            text=self.t("main_title"),
             font=self._text_font(28),
             text_color=TEXT_PRIMARY,
         ).pack(pady=(0, 18))
 
-        play_text, play_icon = self._button_label("Играть", "play", (28, 32), TEXT_PRIMARY)
+        play_text, play_icon = self._button_label(self.t("play"), "play", (28, 32), TEXT_PRIMARY)
         self._make_button(
             content,
             play_text,
@@ -330,7 +586,7 @@ class PrisonersApp(ctk.CTk):
             image=play_icon,
         ).pack(pady=6)
 
-        stats_text, stats_icon = self._button_label("Статистика", "stats", (30, 29), TEXT_PRIMARY)
+        stats_text, stats_icon = self._button_label(self.t("statistics"), "stats", (30, 29), TEXT_PRIMARY)
         self._make_button(
             content,
             stats_text,
@@ -343,7 +599,7 @@ class PrisonersApp(ctk.CTk):
             image=stats_icon,
         ).pack(pady=6)
 
-        exit_text, exit_icon = self._button_label("Выйти", "exit", (24, 28), TEXT_PRIMARY)
+        exit_text, exit_icon = self._button_label(self.t("exit"), "exit", (24, 28), TEXT_PRIMARY)
         self._make_button(
             content,
             exit_text,
@@ -358,14 +614,17 @@ class PrisonersApp(ctk.CTk):
 
         ctk.CTkLabel(
             content,
-            text="Классическая логическая задача\nНайдите свой номер среди 100 ящиков",
+            text=self.t("main_subtitle"),
             font=self._text_font(16),
             text_color=TEXT_MUTED,
             justify="center",
         ).pack(pady=(18, 0))
 
     def show_game_setup(self) -> None:
+        self.current_screen = "game_setup"
         self.clear_container()
+        self.title(self.t("window_title"))
+        self._render_language_switcher(self.container)
 
         panel = self._make_panel(self.container, fg_color=SURFACE_COLOR, corner_radius=20)
         panel.place(relx=0.5, rely=0.5, anchor="center")
@@ -375,7 +634,7 @@ class PrisonersApp(ctk.CTk):
 
         ctk.CTkLabel(
             body,
-            text="Настройка игры",
+            text=self.t("game_setup"),
             font=self._text_font(36, bold=True),
             text_color=TEXT_PRIMARY,
         ).pack(pady=(0, 24))
@@ -394,7 +653,7 @@ class PrisonersApp(ctk.CTk):
 
         ctk.CTkLabel(
             title_row,
-            text="Количество заключенных:",
+            text=self.t("prisoners_count"),
             font=self._text_font(22, bold=True),
             text_color="#0c1110",
         ).pack(side="left")
@@ -404,7 +663,7 @@ class PrisonersApp(ctk.CTk):
 
         ctk.CTkLabel(
             input_card,
-            text="Введите число (от 2 до 1000):",
+            text=self.t("enter_number"),
             font=self._text_font(13, bold=True),
             text_color=TEXT_MUTED,
         ).pack(anchor="w", padx=20, pady=(12, 6))
@@ -437,7 +696,7 @@ class PrisonersApp(ctk.CTk):
 
         self.setup_summary_attempts_label = ctk.CTkLabel(
             summary_card,
-            text="Попыток на каждого: 50",
+            text=self.t("attempts_per_person", attempts=50),
             font=self._text_font(15),
             text_color=TEXT_MUTED,
             justify="center",
@@ -446,7 +705,7 @@ class PrisonersApp(ctk.CTk):
 
         ctk.CTkLabel(
             body,
-            text="Быстрый выбор:",
+            text=self.t("quick_selection"),
             font=self._text_font(16),
             text_color=TEXT_PRIMARY,
         ).pack(anchor="w", pady=(0, 10))
@@ -473,7 +732,7 @@ class PrisonersApp(ctk.CTk):
             btn.grid(row=row, column=col, padx=8, pady=6)
             self.quick_pick_buttons.append(btn)
 
-        start_text, start_icon = self._button_label("Начать игру", "play2.0", (28, 32), TEXT_PRIMARY)
+        start_text, start_icon = self._button_label(self.t("start_game"), "play2.0", (28, 32), TEXT_PRIMARY)
         self._make_button(
             body,
             start_text,
@@ -487,7 +746,7 @@ class PrisonersApp(ctk.CTk):
             image=start_icon,
         ).pack(pady=(2, 10))
 
-        back_text, back_icon = self._button_label("Назад", "back", (22, 14), TEXT_PRIMARY)
+        back_text, back_icon = self._button_label(self.t("back"), "back", (22, 14), TEXT_PRIMARY)
         self._make_button(
             body,
             back_text,
@@ -511,7 +770,10 @@ class PrisonersApp(ctk.CTk):
         self._refresh_setup_preview()
 
     def show_stats_page(self) -> None:
+        self.current_screen = "stats"
         self.clear_container()
+        self.title(self.t("window_title"))
+        self._render_language_switcher(self.container)
 
         page = ctk.CTkScrollableFrame(
             self.container,
@@ -527,7 +789,7 @@ class PrisonersApp(ctk.CTk):
         top_row = ctk.CTkFrame(header, fg_color="transparent")
         top_row.pack(fill="x", padx=12, pady=(10, 0))
 
-        back_text, back_icon = self._button_label("Назад", "back", (22, 14), TEXT_PRIMARY)
+        back_text, back_icon = self._button_label(self.t("back"), "back", (22, 14), TEXT_PRIMARY)
         self._make_button(
             top_row,
             back_text,
@@ -541,7 +803,7 @@ class PrisonersApp(ctk.CTk):
             image=back_icon,
         ).pack(side="left")
 
-        export_text, export_icon = self._button_label("Экспорт данных", "export", (16, 20), TEXT_PRIMARY)
+        export_text, export_icon = self._button_label(self.t("export_data"), "export", (16, 20), TEXT_PRIMARY)
         self._make_button(
             top_row,
             export_text,
@@ -557,14 +819,14 @@ class PrisonersApp(ctk.CTk):
 
         ctk.CTkLabel(
             header,
-            text="Статистика",
+            text=self.t("statistics"),
             font=self._text_font(38, bold=True),
             text_color=TEXT_PRIMARY,
         ).pack(anchor="w", padx=54, pady=(0, 6))
 
         ctk.CTkLabel(
             header,
-            text="Общая статистика",
+            text=self.t("overall_statistics"),
             font=self._text_font(18, bold=True),
             text_color=TEXT_PRIMARY,
         ).pack(anchor="w", padx=64, pady=(0, 14))
@@ -652,21 +914,21 @@ class PrisonersApp(ctk.CTk):
                 ).pack(pady=(0, 12))
             self.stats_kpi_labels[key] = value_label
 
-        _kpi_card(0, "Всего игр", "games", "#2b584b")
-        _kpi_card(1, "Процент побед", "win_rate", "#396856")
-        _kpi_card(2, "Побед", "wins", "#34C759")
-        _kpi_card(3, "Поражений", "losses", "#FF0000")
+        _kpi_card(0, self.t("total_games"), "games", "#2b584b")
+        _kpi_card(1, self.t("win_percentage"), "win_rate", "#396856")
+        _kpi_card(2, self.t("wins"), "wins", "#34C759")
+        _kpi_card(3, self.t("losses"), "losses", "#FF0000")
 
         ctk.CTkLabel(
             page,
-            text="Статистика по количеству заключенных",
+            text=self.t("stats_by_prisoners"),
             font=self._text_font(26, bold=True),
             text_color=TEXT_PRIMARY,
         ).pack(anchor="w", padx=160, pady=(12, 18))
 
         ctk.CTkLabel(
             page,
-            text="Ниже показана общая статистика для двух последних запусков.",
+            text=self.t("stats_recent_info"),
             font=self._text_font(13),
             text_color=TEXT_MUTED,
         ).pack(anchor="w", padx=160, pady=(0, 14))
@@ -719,14 +981,14 @@ class PrisonersApp(ctk.CTk):
 
             title_label = ctk.CTkLabel(
                 title_wrap,
-                text=f"{n_value} заключенных",
+                text=self.t("prisoners_n", count=n_value),
                 font=self._text_font(17, bold=True),
                 text_color=TEXT_PRIMARY,
             )
             title_label.pack(anchor="w")
             attempts_label = ctk.CTkLabel(
                 title_wrap,
-                text=f"Попыток: {n_value // 2}",
+                text=self.t("attempts_short", attempts=n_value // 2),
                 font=self._number_font(13),
                 text_color=TEXT_DIM,
             )
@@ -736,32 +998,32 @@ class PrisonersApp(ctk.CTk):
 
             ctk.CTkLabel(
                 card,
-                text="Игры",
+                text=self.t("games"),
                 font=self._text_font(12),
                 text_color=TEXT_MUTED,
             ).pack(anchor="w", padx=14)
 
             games_row = ctk.CTkFrame(card, fg_color="transparent")
             games_row.pack(padx=14, pady=(8, 8))
-            games_label = _stat_chip(games_row, "games", "Всего", "#92a59c")
-            wins_label = _stat_chip(games_row, "wins", "Побед", "#47a962")
-            losses_label = _stat_chip(games_row, "losses", "Поражений", "#8a6257")
+            games_label = _stat_chip(games_row, "games", self.t("total"), "#92a59c")
+            wins_label = _stat_chip(games_row, "wins", self.t("wins"), "#47a962")
+            losses_label = _stat_chip(games_row, "losses", self.t("losses"), "#8a6257")
 
             ctk.CTkLabel(
                 card,
-                text="Заключенные",
+                text=self.t("prisoners"),
                 font=self._text_font(12),
                 text_color=TEXT_MUTED,
             ).pack(anchor="w", padx=14, pady=(2, 0))
 
             prisoners_row = ctk.CTkFrame(card, fg_color="transparent")
             prisoners_row.pack(padx=14, pady=(8, 6))
-            saved_label = _stat_chip(prisoners_row, "saved", "Нашли", "#47a962")
-            lost_label = _stat_chip(prisoners_row, "lost", "Проиграли", "#8a6257")
+            saved_label = _stat_chip(prisoners_row, "saved", self.t("found"), "#47a962")
+            lost_label = _stat_chip(prisoners_row, "lost", self.t("lost"), "#8a6257")
 
             win_rate_label = ctk.CTkLabel(
                 card,
-                text="0.0% успешность",
+                text=self.t("success_rate", rate=0.0),
                 font=self._number_font(15),
                 text_color=TEXT_PRIMARY,
             )
@@ -785,7 +1047,7 @@ class PrisonersApp(ctk.CTk):
         fact_card.pack(fill="x", padx=146, pady=(0, 26))
         self.stats_fact_label = ctk.CTkLabel(
             fact_card,
-            text="Интересный факт:",
+            text=self.t("interesting_fact", cycle=0, random=0.0),
             font=self._text_font(15),
             text_color=TEXT_MUTED,
             justify="left",
@@ -796,7 +1058,10 @@ class PrisonersApp(ctk.CTk):
         self.run_stats()
 
     def show_export_page(self) -> None:
+        self.current_screen = "export"
         self.clear_container()
+        self.title(self.t("window_title"))
+        self._render_language_switcher(self.container)
 
         shell = self._make_panel(self.container, fg_color=SURFACE_COLOR, corner_radius=18)
         shell.place(relx=0.5, rely=0.5, anchor="center")
@@ -819,7 +1084,7 @@ class PrisonersApp(ctk.CTk):
             ).pack(side="left", padx=(0, 14))
         ctk.CTkLabel(
             title_row,
-            text="Экспорт данных",
+            text=self.t("export_data"),
             font=self._text_font(28, bold=True),
             text_color="#b8ff84",
         ).pack(side="left")
@@ -865,7 +1130,7 @@ class PrisonersApp(ctk.CTk):
         bottom_row.pack(fill="x", pady=(8, 0))
         self._make_button(
             bottom_row,
-            "Назад",
+            self.t("back"),
             command=self.show_stats_page,
             fg_color=RED,
             hover_color=RED_HOVER,
@@ -882,45 +1147,18 @@ class PrisonersApp(ctk.CTk):
     def _build_export_payload(self) -> Dict[str, object]:
         total_summary = self.stats_store.total_summary()
         details: Dict[str, Dict[str, float]] = {}
-        for n_value in sorted(set([10, 25, 50, 100] + self.stats_detail_ns)):
+        counts = sorted(set(DEFAULT_STATS_COUNTS + self.stats_detail_ns))
+        for n_value in counts:
             details[str(n_value)] = self.stats_store.summary_for_n(n_value)
-        return {
-            "summary": total_summary,
-            "by_prisoners": details,
-        }
+        return {"summary": total_summary, "by_prisoners": details}
 
     def _build_export_rows(self, payload: Dict[str, object]) -> List[Dict[str, object]]:
-        rows: List[Dict[str, object]] = []
-        summary = payload["summary"]
-        rows.append(
-            {
-                "scope": "summary",
-                "prisoners": "all",
-                **summary,
-            }
-        )
+        rows = [{"scope": "summary", "prisoners": "all", **payload["summary"]}]
         for n_key, stats in payload["by_prisoners"].items():
-            rows.append(
-                {
-                    "scope": "by_prisoners",
-                    "prisoners": n_key,
-                    **stats,
-                }
-            )
+            rows.append({"scope": "by_prisoners", "prisoners": n_key, **stats})
         return rows
 
     def _export_stats_xlsx(self, target: Path, rows: List[Dict[str, object]]) -> None:
-        headers = [
-            "scope",
-            "prisoners",
-            "games",
-            "wins",
-            "losses",
-            "saved_prisoners",
-            "lost_prisoners",
-            "win_rate",
-        ]
-
         def col_name(index: int) -> str:
             name = ""
             value = index
@@ -939,7 +1177,7 @@ class PrisonersApp(ctk.CTk):
             )
 
         worksheet_rows: List[str] = []
-        all_rows = [headers] + [[row.get(header, "") for header in headers] for row in rows]
+        all_rows = [EXPORT_HEADERS] + [[row.get(header, "") for header in EXPORT_HEADERS] for row in rows]
         for row_index, row_values in enumerate(all_rows, start=1):
             cells: List[str] = []
             for col_index, value in enumerate(row_values, start=1):
@@ -1031,29 +1269,36 @@ class PrisonersApp(ctk.CTk):
             return str(value).replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
 
         lines = [
-            "Prisoners Stats Export",
+            self.t("export_pdf_title"),
             "",
-            "Summary:",
+            self.t("export_pdf_summary"),
         ]
         summary_row = rows[0] if rows else {}
         lines.extend(
             [
-                f"Games: {summary_row.get('games', 0)}",
-                f"Wins: {summary_row.get('wins', 0)}",
-                f"Losses: {summary_row.get('losses', 0)}",
-                f"Saved prisoners: {summary_row.get('saved_prisoners', 0)}",
-                f"Lost prisoners: {summary_row.get('lost_prisoners', 0)}",
-                f"Win rate: {summary_row.get('win_rate', 0):.1f}%",
+                self.t("export_pdf_games", value=summary_row.get("games", 0)),
+                self.t("export_pdf_wins", value=summary_row.get("wins", 0)),
+                self.t("export_pdf_losses", value=summary_row.get("losses", 0)),
+                self.t("export_pdf_saved", value=summary_row.get("saved_prisoners", 0)),
+                self.t("export_pdf_lost", value=summary_row.get("lost_prisoners", 0)),
+                self.t("export_pdf_win_rate", value=summary_row.get("win_rate", 0)),
                 "",
-                "By prisoners:",
+                self.t("export_pdf_by_prisoners"),
             ]
         )
 
         for row in rows[1:]:
             lines.append(
-                f"N={row.get('prisoners')} | games={row.get('games')} | wins={row.get('wins')} | "
-                f"losses={row.get('losses')} | saved={row.get('saved_prisoners')} | "
-                f"lost={row.get('lost_prisoners')} | win rate={float(row.get('win_rate', 0)):.1f}%"
+                self.t(
+                    "export_pdf_line",
+                    prisoners=row.get("prisoners"),
+                    games=row.get("games"),
+                    wins=row.get("wins"),
+                    losses=row.get("losses"),
+                    saved=row.get("saved_prisoners"),
+                    lost=row.get("lost_prisoners"),
+                    rate=float(row.get("win_rate", 0)),
+                )
             )
 
         max_lines_per_page = 40
@@ -1126,16 +1371,7 @@ class PrisonersApp(ctk.CTk):
                 with target.open("w", encoding="utf-8", newline="") as fh:
                     writer = DictWriter(
                         fh,
-                        fieldnames=[
-                            "scope",
-                            "prisoners",
-                            "games",
-                            "wins",
-                            "losses",
-                            "saved_prisoners",
-                            "lost_prisoners",
-                            "win_rate",
-                        ],
+                        fieldnames=EXPORT_HEADERS,
                     )
                     writer.writeheader()
                     for row in rows:
@@ -1159,13 +1395,13 @@ class PrisonersApp(ctk.CTk):
                 target = EXPORTS_DIR / "prisoners_stats_export.pdf"
                 self._export_stats_pdf(target, rows)
             else:
-                self._set_export_status("Неизвестный формат экспорта.", "#ffb0b0")
+                self._set_export_status(self.t("unknown_export_format"), "#ffb0b0")
                 return
         except Exception as exc:
-            self._set_export_status(f"Ошибка экспорта: {exc}", "#ffb0b0")
+            self._set_export_status(self.t("export_error", error=exc), "#ffb0b0")
             return
 
-        self._set_export_status(f"Файл сохранен: {target.name}", "#b8ff84")
+        self._set_export_status(self.t("file_saved", name=target.name), "#b8ff84")
 
     def _parse_positive_int(self, text: str) -> Optional[int]:
         value = text.strip()
@@ -1187,7 +1423,7 @@ class PrisonersApp(ctk.CTk):
             text=str(n),
             text_color="#19ff22" if n >= 2 else TEXT_MUTED,
         )
-        self.setup_summary_attempts_label.configure(text=f"Попыток на каждого: {attempts}")
+        self.setup_summary_attempts_label.configure(text=self.t("attempts_per_person", attempts=attempts))
 
         for btn in self.quick_pick_buttons:
             try:
@@ -1210,10 +1446,10 @@ class PrisonersApp(ctk.CTk):
         if self.cells_entry and self.cells_entry.winfo_exists():
             n = self._parse_positive_int(self.cells_entry.get())
             if n is None:
-                self._set_status("Введите корректное N (от 2 до 1000).", "#ffb0b0")
+                self._set_status(self.t("invalid_n"), "#ffb0b0")
                 return
             if n > 1000:
-                self._set_status("Максимальное N: 1000.", "#ffb0b0")
+                self._set_status(self.t("max_n"), "#ffb0b0")
                 return
         else:
             n = self.total_cells
@@ -1233,7 +1469,9 @@ class PrisonersApp(ctk.CTk):
         self._start_round()
 
     def _show_gameplay_screen(self) -> None:
+        self.current_screen = "gameplay"
         self.clear_container()
+        self.title(self.t("window_title"))
 
         self.game_header = self._make_panel(self.container, fg_color=SURFACE_COLOR, corner_radius=12)
         self.game_header.pack(fill="x", padx=8, pady=(4, 10))
@@ -1241,7 +1479,7 @@ class PrisonersApp(ctk.CTk):
         header_top = ctk.CTkFrame(self.game_header, fg_color="transparent")
         header_top.pack(fill="x", padx=10, pady=(10, 8))
 
-        back_text, back_icon = self._button_label("Назад", "back", (20, 12), TEXT_PRIMARY)
+        back_text, back_icon = self._button_label(self.t("back"), "back", (20, 12), TEXT_PRIMARY)
         self._make_button(
             header_top,
             back_text,
@@ -1273,7 +1511,7 @@ class PrisonersApp(ctk.CTk):
         )
         self.game_attempts_value.pack(side="left", padx=(0, 8))
 
-        new_text, new_icon = self._button_label("Новая игра", "restart", (18, 16), TEXT_PRIMARY)
+        new_text, new_icon = self._button_label(self.t("new_game"), "restart", (18, 16), TEXT_PRIMARY)
         self._make_button(
             right_controls,
             new_text,
@@ -1312,7 +1550,7 @@ class PrisonersApp(ctk.CTk):
         mode_row.pack(anchor="e", padx=12, pady=(0, 10))
 
         self.mode_buttons = {}
-        mode_specs = [("manual", "Каждый"), ("cycle", "Цикл"), ("random", "Случайно")]
+        mode_specs = [("manual", self.t("each")), ("cycle", self.t("cycle")), ("random", self.t("random"))]
         for mode_key, label in mode_specs:
             btn = self._make_button(
                 mode_row,
@@ -1347,7 +1585,7 @@ class PrisonersApp(ctk.CTk):
 
         self.prisoner_badge_label = ctk.CTkLabel(
             self.game_prisoner_card,
-            text="Заключенный #1",
+            text=self.t("prisoner_badge", number=1),
             font=self._text_font(14),
             text_color=TEXT_PRIMARY,
             fg_color="#4b6075",
@@ -1367,7 +1605,9 @@ class PrisonersApp(ctk.CTk):
                 btn.configure(fg_color="#466d7a", hover_color="#3d6170")
 
     def _switch_game_mode(self, mode: str) -> None:
-        if mode not in {"manual", "cycle", "random"}:
+        if mode not in {"manual", *AUTO_MODES}:
+            return
+        if mode == self.game_mode:
             return
         self.game_mode = mode
         self._refresh_mode_buttons()
@@ -1413,17 +1653,21 @@ class PrisonersApp(ctk.CTk):
         self._update_timer_label()
         self.timer_job = self.after(1000, self._tick_timer)
 
+    def _build_cycle_sequence(self) -> List[int]:
+        sequence: List[int] = []
+        current_idx = self.prisoner_number - 1
+        for _ in range(self.max_open):
+            sequence.append(current_idx)
+            found_number = self.boxes[current_idx]
+            if found_number == self.prisoner_number:
+                break
+            current_idx = found_number - 1
+        return sequence
+
     def _prepare_auto_sequence(self) -> None:
         self.auto_step_index = 0
         if self.game_mode == "cycle":
-            self.auto_sequence = []
-            current_idx = self.prisoner_number - 1
-            for _ in range(self.max_open):
-                self.auto_sequence.append(current_idx)
-                found = self.boxes[current_idx]
-                if found == self.prisoner_number:
-                    break
-                current_idx = found - 1
+            self.auto_sequence = self._build_cycle_sequence()
             return
 
         if self.game_mode == "random":
@@ -1434,13 +1678,13 @@ class PrisonersApp(ctk.CTk):
 
     def _schedule_auto_step(self) -> None:
         self._cancel_auto_job()
-        if self.game_mode not in {"cycle", "random"}:
+        if self.game_mode not in AUTO_MODES:
             return
         self.auto_job = self.after(25, self._auto_step)
 
     def _auto_step(self) -> None:
         self.auto_job = None
-        if self.game_finished or self.game_mode not in {"cycle", "random"}:
+        if self.game_finished or self.game_mode not in AUTO_MODES:
             return
         if self.auto_step_index >= len(self.auto_sequence):
             return
@@ -1458,8 +1702,12 @@ class PrisonersApp(ctk.CTk):
         self.game_finished = False
 
         self._set_status(
-            f"Заключенный: {self.prisoner_number} / {self.total_cells}\n"
-            f"Попыток осталось: {self.max_open}",
+            self.t(
+                "status_round",
+                current=self.prisoner_number,
+                total=self.total_cells,
+                attempts=self.max_open,
+            ),
             TEXT_PRIMARY,
         )
         self._update_counter()
@@ -1468,7 +1716,7 @@ class PrisonersApp(ctk.CTk):
         else:
             self._reset_board_buttons()
         if self.prisoner_badge_label:
-            self.prisoner_badge_label.configure(text=f"Заключенный #{self.prisoner_number}")
+            self.prisoner_badge_label.configure(text=self.t("prisoner_badge", number=self.prisoner_number))
         if self.game_mode in {"cycle", "random"}:
             self._prepare_auto_sequence()
             self._schedule_auto_step()
@@ -1480,9 +1728,12 @@ class PrisonersApp(ctk.CTk):
     def _update_counter(self) -> None:
         if self.counter_label:
             self.counter_label.configure(
-                text=(
-                    f"Открыто: {self.opened_count}/{self.max_open} | "
-                    f"Успехи: {self.successful_rounds} | Поражения: {self.failed_rounds}"
+                text=self.t(
+                    "counter",
+                    opened=self.opened_count,
+                    max_open=self.max_open,
+                    wins=self.successful_rounds,
+                    losses=self.failed_rounds,
                 )
             )
         self._update_timer_label()
@@ -1536,13 +1787,7 @@ class PrisonersApp(ctk.CTk):
             self.game_rules_card.pack(fill="x", padx=8, pady=(0, 2))
             ctk.CTkLabel(
                 self.game_rules_card,
-                text=(
-                    "Правила игры:\n\n"
-                    "  * Каждый заключенный должен найти свой номер в 100 ящиках\n"
-                    "  * У каждого заключенного есть 50 попыток\n"
-                    "  * Если хотя бы один заключенный не найдет свой номер - все проигрывают\n"
-                    "  * Стратегия \"ЦИКЛ\" дает около 31% шанса на победу для всех заключенных"
-                ),
+                text=f"{self.t('rules_title')}\n\n{self.t('rules_body')}",
                 font=self._text_font(15),
                 text_color=TEXT_PRIMARY,
                 justify="left",
@@ -1591,8 +1836,11 @@ class PrisonersApp(ctk.CTk):
 
         if won:
             self._set_status(
-                f"Заключенный: {self.prisoner_number} / {self.total_cells}\n"
-                "Номер найден. Переход к следующему.",
+                self.t(
+                    "status_found",
+                    current=self.prisoner_number,
+                    total=self.total_cells,
+                ),
                 "#b2ffd1",
             )
             self.after(1, self._next_prisoner_or_finish_game)
@@ -1603,8 +1851,11 @@ class PrisonersApp(ctk.CTk):
                 saved_prisoners=self.successful_rounds,
             )
             self._set_status(
-                f"Заключенный: {self.prisoner_number} / {self.total_cells}\n"
-                "Номер не найден. Игра завершена.",
+                self.t(
+                    "status_not_found",
+                    current=self.prisoner_number,
+                    total=self.total_cells,
+                ),
                 "#ffd1d1",
             )
             self._show_game_over_summary()
@@ -1630,8 +1881,7 @@ class PrisonersApp(ctk.CTk):
             saved_prisoners=self.successful_rounds,
         )
         self._set_status(
-            f"Заключенный: {total} / {total}\n"
-            f"Серия завершена. Успехов: {self.successful_rounds}, поражений: {self.failed_rounds}.",
+            self.t("status_series_done", total=total, wins=self.successful_rounds, losses=self.failed_rounds),
             TEXT_PRIMARY,
         )
         self._update_counter()
@@ -1641,20 +1891,20 @@ class PrisonersApp(ctk.CTk):
 
         ctk.CTkLabel(
             self.round_summary,
-            text="Серия заключенных пройдена",
+            text=self.t("series_done_title"),
             font=self._text_font(20, bold=True),
             text_color=TEXT_PRIMARY,
         ).pack(pady=(14, 8))
 
         ctk.CTkLabel(
             self.round_summary,
-            text=f"Успешно нашли номер: {self.successful_rounds}\nНе нашли номер: {self.failed_rounds}",
+            text=self.t("series_done_summary", wins=self.successful_rounds, losses=self.failed_rounds),
             font=self._text_font(15),
             text_color=TEXT_MUTED,
             justify="center",
         ).pack(pady=(0, 10))
 
-        new_text, new_icon = self._button_label("Новая игра", "restart", (18, 16), TEXT_PRIMARY)
+        new_text, new_icon = self._button_label(self.t("new_game"), "restart", (18, 16), TEXT_PRIMARY)
         self._make_button(
             self.round_summary,
             new_text,
@@ -1684,23 +1934,20 @@ class PrisonersApp(ctk.CTk):
 
         ctk.CTkLabel(
             self.round_summary,
-            text=f"Игра завершена: номер не найден за {self.max_open} попыток",
+            text=self.t("game_over_title", attempts=self.max_open),
             font=self._text_font(18, bold=True),
             text_color="#ffd1d1",
         ).pack(pady=(14, 8))
 
         ctk.CTkLabel(
             self.round_summary,
-            text=(
-                f"Успешно пройдено заключенных: {self.successful_rounds}\n"
-                f"Провал на заключенном: #{self.prisoner_number}"
-            ),
+            text=self.t("game_over_summary", wins=self.successful_rounds, prisoner=self.prisoner_number),
             font=self._text_font(15),
             text_color=TEXT_MUTED,
             justify="center",
         ).pack(pady=(0, 10))
 
-        new_text, new_icon = self._button_label("Новая игра", "restart", (18, 16), TEXT_PRIMARY)
+        new_text, new_icon = self._button_label(self.t("new_game"), "restart", (18, 16), TEXT_PRIMARY)
         self._make_button(
             self.round_summary,
             new_text,
@@ -1731,9 +1978,9 @@ class PrisonersApp(ctk.CTk):
 
         self.stats_detail_ns = recent_counts[:card_limit]
         if self.stats_detail_ns:
-            self._set_status("Показана общая статистика по двум последним количествам заключенных.", TEXT_MUTED)
+            self._set_status(self.t("shown_recent_stats"), TEXT_MUTED)
         else:
-            self._set_status("Сохраненных игр пока нет.", TEXT_MUTED)
+            self._set_status(self.t("no_saved_games"), TEXT_MUTED)
         total_summary = self.stats_store.total_summary()
 
         if self.stats_kpi_labels:
@@ -1748,25 +1995,20 @@ class PrisonersApp(ctk.CTk):
             n_value = self.stats_detail_ns[idx] if idx < len(self.stats_detail_ns) else card_n
             n_summary = self.stats_store.summary_for_n(n_value)
 
-            labels["title"].configure(text=f"{n_value} заключенных")
-            labels["attempts"].configure(text=f"Попыток: {n_value // 2}")
+            labels["title"].configure(text=self.t("prisoners_n", count=n_value))
+            labels["attempts"].configure(text=self.t("attempts_short", attempts=n_value // 2))
             labels["games"].configure(text=str(n_summary["games"]))
             labels["wins"].configure(text=str(n_summary["wins"]))
             labels["losses"].configure(text=str(n_summary["losses"]))
             labels["saved"].configure(text=str(n_summary["saved_prisoners"]))
             labels["lost"].configure(text=str(n_summary["lost_prisoners"]))
-            labels["win_rate"].configure(text=f"{n_summary['win_rate']:.1f}% успешность")
+            labels["win_rate"].configure(text=self.t("success_rate", rate=n_summary["win_rate"]))
 
         if self.stats_fact_label:
             theory_100 = theoretical_optimal_success_rate(100)
             theory_100_random = theoretical_random_success_rate(100)
             self.stats_fact_label.configure(
-                text=(
-                    "Интересный факт:\n"
-                    "При использовании стратегии \"следования по циклу\" вероятность успеха всех 100 "
-                    f"заключенных составляет около {theory_100:.0f}%, что намного выше случайных "
-                    f"{theory_100_random:.30f}%."
-                )
+                text=self.t("interesting_fact", cycle=theory_100, random=theory_100_random)
             )
 
 
