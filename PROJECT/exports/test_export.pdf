@@ -1,0 +1,52 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+2 0 obj
+<< /Length 515 >>
+stream
+BT
+/F1 12 Tf
+50 790 Td
+14 TL
+(Prisoners Stats Export) Tj
+() '
+(Summary:) '
+(Games: 37) '
+(Wins: 2) '
+(Losses: 35) '
+(Saved prisoners: 42) '
+(Lost prisoners: 1121) '
+(Win rate: 5.4%) '
+() '
+(By prisoners:) '
+(N=10 | games=23 | wins=2 | losses=21 | saved=25 | lost=205 | win rate=8.7%) '
+(N=25 | games=2 | wins=0 | losses=2 | saved=0 | lost=50 | win rate=0.0%) '
+(N=50 | games=0 | wins=0 | losses=0 | saved=0 | lost=0 | win rate=0.0%) '
+(N=100 | games=5 | wins=0 | losses=5 | saved=15 | lost=485 | win rate=0.0%) '
+ET
+endstream
+endobj
+3 0 obj
+<< /Type /Page /Parent 4 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 1 0 R >> >> /Contents 2 0 R >>
+endobj
+4 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+5 0 obj
+<< /Type /Catalog /Pages 4 0 R >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000015 00000 n 
+0000000085 00000 n 
+0000000651 00000 n 
+0000000777 00000 n 
+0000000834 00000 n 
+trailer
+<< /Size 6 /Root 5 0 R >>
+startxref
+883
+%%EOF
