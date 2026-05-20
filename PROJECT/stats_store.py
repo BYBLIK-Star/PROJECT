@@ -38,6 +38,13 @@ class StatsStore:
                     saved_prisoners INTEGER NOT NULL DEFAULT 0,
                     lost_prisoners INTEGER NOT NULL DEFAULT 0
                 );
+
+                CREATE TABLE IF NOT EXISTS game_history (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    total_prisoners INTEGER NOT NULL,
+                    won INTEGER NOT NULL DEFAULT 0,
+                    saved_prisoners INTEGER NOT NULL DEFAULT 0
+                );
                 """
             )
             conn.execute(
@@ -151,6 +158,14 @@ class StatsStore:
                 """,
                 (total_prisoners, int(won), int(not won), saved, lost),
             )
+            conn.execute(
+                """
+                INSERT INTO game_history (
+                    total_prisoners, won, saved_prisoners
+                ) VALUES (?, ?, ?)
+                """,
+                (total_prisoners, int(won), saved),
+            )
 
     def total_summary(self) -> Dict[str, float]:
         with self._connect() as conn:
@@ -204,3 +219,37 @@ class StatsStore:
             "lost_prisoners": lost,
             "win_rate": win_rate,
         }
+
+    def recent_prisoner_counts(self, limit: int = 2) -> list[int]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT total_prisoners
+                FROM game_history
+                ORDER BY id DESC
+                """
+            ).fetchall()
+
+        recent: list[int] = []
+        for row in rows:
+            n_value = int(row["total_prisoners"])
+            if n_value in recent:
+                continue
+            recent.append(n_value)
+            if len(recent) >= limit:
+                break
+        return recent
+
+    def available_prisoner_counts(self, limit: int = 10) -> list[int]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT total_prisoners
+                FROM stats_by_n
+                ORDER BY games DESC, total_prisoners DESC
+                LIMIT ?
+                """,
+                (limit,),
+            ).fetchall()
+
+        return [int(row["total_prisoners"]) for row in rows]

@@ -1,0 +1,52 @@
+{
+  "summary": {
+    "games": 42,
+    "wins": 2,
+    "losses": 40,
+    "saved_prisoners": 49,
+    "lost_prisoners": 1614,
+    "win_rate": 4.761904761904762
+  },
+  "by_prisoners": {
+    "10": {
+      "games": 23,
+      "wins": 2,
+      "losses": 21,
+      "saved_prisoners": 25,
+      "lost_prisoners": 205,
+      "win_rate": 8.695652173913043
+    },
+    "25": {
+      "games": 2,
+      "wins": 0,
+      "losses": 2,
+      "saved_prisoners": 0,
+      "lost_prisoners": 50,
+      "win_rate": 0.0
+    },
+    "50": {
+      "games": 0,
+      "wins": 0,
+      "losses": 0,
+      "saved_prisoners": 0,
+      "lost_prisoners": 0,
+      "win_rate": 0.0
+    },
+    "100": {
+      "games": 10,
+      "wins": 0,
+      "losses": 10,
+      "saved_prisoners": 22,
+      "lost_prisoners": 978,
+      "win_rate": 0.0
+    },
+    "150": {
+      "games": 1,
+      "wins": 0,
+      "losses": 1,
+      "saved_prisoners": 0,
+      "lost_prisoners": 150,
+      "win_rate": 0.0
+    }
+  }
+}
