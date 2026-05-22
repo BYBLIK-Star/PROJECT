@@ -219,3 +219,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+PROJECT/exports/
+PROJECT/prisoners_stats.db
+PROJECT/prisoners_stats.json

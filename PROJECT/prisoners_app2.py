@@ -624,7 +624,6 @@ class PrisonersApp(ctk.CTk):
         self.current_screen = "game_setup"
         self.clear_container()
         self.title(self.t("window_title"))
-        self._render_language_switcher(self.container)
 
         panel = self._make_panel(self.container, fg_color=SURFACE_COLOR, corner_radius=20)
         panel.place(relx=0.5, rely=0.5, anchor="center")
@@ -773,7 +772,6 @@ class PrisonersApp(ctk.CTk):
         self.current_screen = "stats"
         self.clear_container()
         self.title(self.t("window_title"))
-        self._render_language_switcher(self.container)
 
         page = ctk.CTkScrollableFrame(
             self.container,
@@ -1061,7 +1059,6 @@ class PrisonersApp(ctk.CTk):
         self.current_screen = "export"
         self.clear_container()
         self.title(self.t("window_title"))
-        self._render_language_switcher(self.container)
 
         shell = self._make_panel(self.container, fg_color=SURFACE_COLOR, corner_radius=18)
         shell.place(relx=0.5, rely=0.5, anchor="center")
